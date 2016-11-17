@@ -1,0 +1,7 @@
+from	to	interaction
+85	141	shm
+42	51	shm
+5	245	shm
+40	88	shm
+143	239	shm
+163	249	shm
