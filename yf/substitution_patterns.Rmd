@@ -1,0 +1,114 @@
+---
+title: "Distribution, RS ratio and patterns of SHM"
+author: "Mikhail Shugay, Anna Obraztsova"
+date: "11/17/2016"
+output: html_document
+---
+
+Load preprocessed data
+
+```{r, warning=FALSE, message=FALSE}
+df <- load("sp.Rda")
+```
+
+S and R mutation share by region:
+
+```{r}
+df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
+df.1 <- ddply(df, .(proj, sample, type, replica, mutation.type, region), summarize,
+              count = sum(total.clonotypes))
+df.1$region <- factor(df.1$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
+```
+
+Comparing mutation density across regions for old and young:
+
+```{r}
+df.2 <- ddply(df.1, .(proj, sample, type, replica, region), summarize, count = sum(count))
+df.2 <- ddply(df.2, .(proj, sample, type, replica), transform, freq = count / sum(count))
+
+# DNA data
+
+ggplot(subset(df.2, type == "DNA"), aes(x = proj, group = proj, y = freq, fill = proj)) +
+  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~region, scales="free_y") +
+  theme_bw()
+
+a <- aov(freq ~ proj * region, subset(df.2, type == "DNA"))
+summary(a)
+
+# RNA data
+
+ggplot(subset(df.2, type == "RNA"), aes(x = proj, group = proj, y = freq, fill = proj)) +
+  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~region, scales="free_y") +
+  theme_bw()
+
+a <- aov(freq ~ proj * region, subset(df.2, type == "RNA"))
+summary(a)
+```
+
+Compare overall R:S ratios:
+
+```{r}
+df.3 <- ddply(df.1, .(proj, sample, type, replica, mutation.type), summarize, count = sum(count))
+df.3 <- subset(ddply(df.3, .(proj, sample, type, replica), transform, share = count / sum(count)), mutation.type == "R")
+
+# DNA data
+
+ggplot(subset(df.3, type == "DNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
+  geom_boxplot() + ylab("R:S ratio") + 
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+
+t.test(share ~ proj, subset(df.3, type == "DNA"))
+
+# RNA data
+
+ggplot(subset(df.3, type == "RNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
+  geom_boxplot() + ylab("R:S ratio") + 
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+
+t.test(share ~ proj, subset(df.3, type == "RNA"))
+```
+
+Compare R:S ratio by region:
+
+```{r}
+df.4 <- ddply(df.1, .(proj, sample, type, replica, mutation.type, region), summarize, count = sum(count))
+df.4 <- subset(ddply(df.4, .(proj, sample, type, replica, region), transform, share = count / sum(count)),
+               mutation.type == "R")
+
+# DNA data
+
+ggplot(subset(df.4, type == "DNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
+  geom_boxplot() + ylab("R:S ratio") + 
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~region, scales="free_y") +
+  theme_bw()
+
+a <- aov(share ~ proj * region, subset(df.4, type == "DNA"))
+summary(a)
+
+# RNA data
+
+ggplot(subset(df.4, type == "RNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
+  geom_boxplot() + ylab("R:S ratio") + 
+  scale_fill_brewer(palette = "Set1") +
+  facet_wrap(~region, scales="free_y") +
+  theme_bw()
+
+a <- aov(share ~ proj * region, subset(df.4, type == "RNA"))
+summary(a)
+```
+
+Plot R/S by amino acid position (RNA only):
+
+```{r}
+df.5 <- ddply(df, .(proj, type, sample, replica), transform, weight = total.clonotypes / sum(total.clonotypes))
+
+ggplot(subset(df.5, type == "RNA"), aes(x=pos.aa, weight=weight, color=proj)) + 
+  geom_density() +
+  facet_grid(mutation.type~., scales="free_y") + scale_color_brewer(palette = "Set1") + theme_bw()
+```
+
