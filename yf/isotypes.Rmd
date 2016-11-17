@@ -2,25 +2,31 @@
 title: "Isotype distribution analysis"
 author: "Mikhail Shugay, Anna Obraztsova"
 date: "11/17/2016"
-output: html_document
+output: pdf_document
 ---
 
 Isotype distribution
 ```{r, warning=FALSE, message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+library(stringr)
+library(reshape2)
+
 rna <- data.frame()
 
 old_rna = c("Abdulain", "Ilgen", "Mamaev", "Smirnov", "Vlasov")
 young_rna = c("Antipyat", "Epifancev", "Hadjibekov", "Koshkin", "Kovalchuk")
 
 for (sample in old_rna){
-  .df <- read.table(paste('data16.11/yf_old_RNA/', sample, ".txt", sep = ""), header=T, sep="\t")
+  .df <- read.table(paste('data/mixcr_yf_old_RNA/', sample, ".txt.gz", sep = ""), header=T, sep="\t")
   .df$proj <- "old"
 	.df$sample <- sample
 	rna <- rbind(rna, .df)
 }
 
 for (sample in young_rna){
-	.df <- read.table(paste('data16.11/yf_young_RNA/', sample, ".txt", sep = ""), header=T, sep="\t")
+	.df <- read.table(paste('data/mixcr_yf_young_RNA/', sample, ".txt.gz", sep = ""), header=T, sep="\t")
 	.df$proj <- "young"
 	.df$sample <- sample
 	rna <- rbind(rna, .df)
@@ -43,5 +49,38 @@ rna.2 <- ddply(rna, .(proj, sample), summarize,
              share.IGHM = sum(clone.fraction[which(isotype == "IGHM")]))
 
 rna.3 <- melt(rna.2, id.vars = c("proj", "sample"))
-ggplot(rna.3, aes(x=proj, group=proj, y=value)) + geom_boxplot() + facet_grid(.~variable, scales="free") + theme_bw()
+```
+
+Isotype detalization
+
+```{r}
+ggplot(rna.3, aes(x=sample, weight=value, fill = variable)) + 
+  geom_bar() + facet_wrap(~proj, scales = "free_x") + scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+```
+
+Comparative analysis
+
+```{r}
+ggplot(rna.3, aes(x=proj, group=proj, y = value, fill = proj)) + geom_boxplot() + 
+  facet_wrap(~variable, scales="free_y") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+
+t.test(subset(rna.3, variable == "share.IGHA" & proj == "young")$value,
+       subset(rna.3, variable == "share.IGHA" & proj == "old")$value)
+
+t.test(subset(rna.3, variable == "share.IGHM" & proj == "young")$value,
+       subset(rna.3, variable == "share.IGHM" & proj == "old")$value)
+```
+
+Check IgG/IgM ratio
+
+```{r}
+rna.4 <- rna.2
+rna.4$GMratio <- rna.4$share.IGHG / rna.4$share.IGHM
+
+ggplot(rna.4, aes(x=proj, y=GMratio, fill = proj)) + geom_boxplot() + 
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
 ```
