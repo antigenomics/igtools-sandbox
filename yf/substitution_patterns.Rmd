@@ -8,16 +8,32 @@ output: html_document
 Load preprocessed data
 
 ```{r, warning=FALSE, message=FALSE}
-df <- load("sp.Rda")
+library(plyr)
+library(ggplot2)
+load("sp.Rda")
+df$region <- factor(df$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
+df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
 ```
 
-S and R mutation share by region:
+Check if we observe well-documented increase in replacement:synonimic hypermutation ratio in CDR regions:
 
 ```{r}
-df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
+ggplot(subset(df.5, type == "RNA")) + 
+  geom_bar(aes(x=pos.aa, weight=weight, fill=region)) +
+  geom_density(aes(x=pos.aa, weight=weight, linetype = mutation.type), size=1) +
+  ylab("SHM density") +
+  xlab("Position in IG, AA") +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+```
+
+### Comparative analysis
+
+Groom and summarize
+
+```{r}
 df.1 <- ddply(df, .(proj, sample, type, replica, mutation.type, region), summarize,
               count = sum(total.clonotypes))
-df.1$region <- factor(df.1$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
 ```
 
 Comparing mutation density across regions for old and young:
@@ -51,7 +67,8 @@ Compare overall R:S ratios:
 
 ```{r}
 df.3 <- ddply(df.1, .(proj, sample, type, replica, mutation.type), summarize, count = sum(count))
-df.3 <- subset(ddply(df.3, .(proj, sample, type, replica), transform, share = count / sum(count)), mutation.type == "R")
+df.3 <- subset(ddply(df.3, .(proj, sample, type, replica), transform, share = count / (sum(count) - count)),
+               mutation.type == "R")
 
 # DNA data
 
@@ -76,7 +93,7 @@ Compare R:S ratio by region:
 
 ```{r}
 df.4 <- ddply(df.1, .(proj, sample, type, replica, mutation.type, region), summarize, count = sum(count))
-df.4 <- subset(ddply(df.4, .(proj, sample, type, replica, region), transform, share = count / sum(count)),
+df.4 <- subset(ddply(df.4, .(proj, sample, type, replica, region), transform, share = count / (sum(count) - count)),
                mutation.type == "R")
 
 # DNA data
@@ -109,6 +126,39 @@ df.5 <- ddply(df, .(proj, type, sample, replica), transform, weight = total.clon
 
 ggplot(subset(df.5, type == "RNA"), aes(x=pos.aa, weight=weight, color=proj)) + 
   geom_density() +
-  facet_grid(mutation.type~., scales="free_y") + scale_color_brewer(palette = "Set1") + theme_bw()
+  facet_grid(mutation.type~., scales="free_y") + scale_color_brewer(palette = "Set1") +
+  theme_bw()
+```
+
+Mutation patterns (nucleotide):
+
+```{r}
+df.6 <- ddply(df, .(proj, type, sample, replica, from.nt, to.nt), summarize, count = sum(total.clonotypes))
+df.6 <- ddply(df.6, .(proj, type, sample, replica), transform, share = count / sum(count))
+
+ggplot(subset(df.6, type=="DNA"), 
+       aes(x = interaction(from.nt, to.nt), group = interaction(from.nt, to.nt, proj), y = share, fill = proj)) +
+  geom_boxplot() + 
+  scale_fill_brewer(palette = "Set1") + 
+  theme_bw()
+
+ggplot(subset(df.6, type=="RNA"), 
+       aes(x = interaction(from.nt, to.nt), group = interaction(from.nt, to.nt, proj), y = share, fill = proj)) +
+  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+```
+
+Mutation patterns (amino acid):
+
+```{r}
+df.6 <- ddply(df, .(proj, type, sample, replica, from.aa, to.aa), summarize, count = sum(total.clonotypes))
+df.6 <- ddply(df.6, .(proj, type, sample, replica), transform, share = count / sum(count))
+
+ggplot(subset(df.6, type=="RNA"), 
+       aes(x = from.aa, y=to.aa, fill = log10(share))) +
+  geom_tile() + 
+  facet_wrap(~proj) +
+  #scale_fill_brewer(palette = "Set1") + 
+  theme_bw()
 ```
 
