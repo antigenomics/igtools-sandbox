@@ -2,8 +2,12 @@
 title: "Distribution, RS ratio and patterns of SHM"
 author: "Mikhail Shugay, Anna Obraztsova"
 date: "11/17/2016"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
+
+## Analysis of substitution type and frequency
 
 Load preprocessed data
 
@@ -11,154 +15,171 @@ Load preprocessed data
 library(plyr)
 library(ggplot2)
 load("sp.Rda")
+df <- subset(df, type == "RNA")
 df$region <- factor(df$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
 df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
+df <- ddply(df, .(proj, type, sample, replica), transform, 
+            weight = total.clonotypes / sum(total.clonotypes))
 ```
 
 Check if we observe well-documented increase in replacement:synonimic hypermutation ratio in CDR regions:
 
 ```{r}
-ggplot(subset(df.5, type == "RNA")) + 
+ggplot(df) + 
   geom_bar(aes(x=pos.aa, weight=weight, fill=region)) +
-  geom_density(aes(x=pos.aa, weight=weight, linetype = mutation.type), size=1) +
-  ylab("SHM density") +
+  geom_density(aes(x=pos.aa, weight=weight, linetype = mutation.type)) +
+  ylab("Hypermutation density") +
   xlab("Position in IG, AA") +
   scale_fill_brewer(palette = "Set1") +
   theme_bw()
 ```
 
-### Comparative analysis
+## Comparative analysis
 
-Groom and summarize
+Summarize by region and type, compute frequencies and R:S ratio
 
 ```{r}
 df.1 <- ddply(df, .(proj, sample, type, replica, mutation.type, region), summarize,
               count = sum(total.clonotypes))
+
+df.1 <- ddply(df.1, .(proj, sample, type, replica), transform,
+              freq = count / sum(count))
+
+df.1 <- ddply(df.1, .(proj, sample, type, replica, region), transform,
+              ratio = count / (sum(count) - count))
 ```
 
-Comparing mutation density across regions for old and young:
+Fraction of errors in each region
 
 ```{r}
-df.2 <- ddply(df.1, .(proj, sample, type, replica, region), summarize, count = sum(count))
-df.2 <- ddply(df.2, .(proj, sample, type, replica), transform, freq = count / sum(count))
-
-# DNA data
-
-ggplot(subset(df.2, type == "DNA"), aes(x = proj, group = proj, y = freq, fill = proj)) +
-  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~region, scales="free_y") +
-  theme_bw()
-
-a <- aov(freq ~ proj * region, subset(df.2, type == "DNA"))
-summary(a)
-
-# RNA data
-
-ggplot(subset(df.2, type == "RNA"), aes(x = proj, group = proj, y = freq, fill = proj)) +
-  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~region, scales="free_y") +
-  theme_bw()
-
-a <- aov(freq ~ proj * region, subset(df.2, type == "RNA"))
-summary(a)
-```
-
-Compare overall R:S ratios:
-
-```{r}
-df.3 <- ddply(df.1, .(proj, sample, type, replica, mutation.type), summarize, count = sum(count))
-df.3 <- subset(ddply(df.3, .(proj, sample, type, replica), transform, share = count / (sum(count) - count)),
-               mutation.type == "R")
-
-# DNA data
-
-ggplot(subset(df.3, type == "DNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
-  geom_boxplot() + ylab("R:S ratio") + 
-  scale_fill_brewer(palette = "Set1") +
-  theme_bw()
-
-t.test(share ~ proj, subset(df.3, type == "DNA"))
-
-# RNA data
-
-ggplot(subset(df.3, type == "RNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
-  geom_boxplot() + ylab("R:S ratio") + 
-  scale_fill_brewer(palette = "Set1") +
-  theme_bw()
-
-t.test(share ~ proj, subset(df.3, type == "RNA"))
-```
-
-Compare R:S ratio by region:
-
-```{r}
-df.4 <- ddply(df.1, .(proj, sample, type, replica, mutation.type, region), summarize, count = sum(count))
-df.4 <- subset(ddply(df.4, .(proj, sample, type, replica, region), transform, share = count / (sum(count) - count)),
-               mutation.type == "R")
-
-# DNA data
-
-ggplot(subset(df.4, type == "DNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
-  geom_boxplot() + ylab("R:S ratio") + 
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~region, scales="free_y") +
-  theme_bw()
-
-a <- aov(share ~ proj * region, subset(df.4, type == "DNA"))
-summary(a)
-
-# RNA data
-
-ggplot(subset(df.4, type == "RNA"), aes(x=proj, group=proj, y=share, fill=proj)) + 
-  geom_boxplot() + ylab("R:S ratio") + 
-  scale_fill_brewer(palette = "Set1") +
-  facet_wrap(~region, scales="free_y") +
-  theme_bw()
-
-a <- aov(share ~ proj * region, subset(df.4, type == "RNA"))
-summary(a)
-```
-
-Plot R/S by amino acid position (RNA only):
-
-```{r}
-df.5 <- ddply(df, .(proj, type, sample, replica), transform, weight = total.clonotypes / sum(total.clonotypes))
-
-ggplot(subset(df.5, type == "RNA"), aes(x=pos.aa, weight=weight, color=proj)) + 
-  geom_density() +
-  facet_grid(mutation.type~., scales="free_y") + scale_color_brewer(palette = "Set1") +
+ggplot(df.1, aes(x=proj, y = freq)) + geom_boxplot() + 
+  facet_wrap(~region, scales = "free_y") + 
+  xlab("") + ylab("Share of hypermutations") +
   theme_bw()
 ```
 
-Mutation patterns (nucleotide):
+R:S ratio varies greatly by region
 
 ```{r}
-df.6 <- ddply(df, .(proj, type, sample, replica, from.nt, to.nt), summarize, count = sum(total.clonotypes))
-df.6 <- ddply(df.6, .(proj, type, sample, replica), transform, share = count / sum(count))
-
-ggplot(subset(df.6, type=="DNA"), 
-       aes(x = interaction(from.nt, to.nt), group = interaction(from.nt, to.nt, proj), y = share, fill = proj)) +
+ggplot(subset(df.1, mutation.type == "R"), aes(x=proj, y = ratio)) + 
   geom_boxplot() + 
+  facet_wrap(~region, scales = "free_y") + 
+  xlab("") + ylab("R:S ratio") +
+  theme_bw()
+```
+
+Overall R:S ratio is higher in young
+
+```{r}
+df.2 <- ddply(df, .(proj, sample, type, replica, mutation.type), summarize,
+              count = sum(total.clonotypes))
+
+df.2 <- ddply(df.2, .(proj, sample, type, replica), transform,
+              ratio = count / (sum(count) - count))
+
+ggplot(subset(df.2, mutation.type == "R"), aes(x=proj, y = ratio)) + 
+  geom_boxplot() + 
+  xlab("") + ylab("R:S ratio") +
+  theme_bw()
+
+t.test(ratio ~ proj, subset(df.2, mutation.type == "R"))
+```
+
+Role of age factor can be deduced using generalized linear model for replacement hypermutation probability (binomial family). Probability of replacement hypermutations is increased by $7 \pm 1\%$ in young compared to old ($P < 10^{-6}$)
+
+```{r}
+df$R <- ifelse(df$mutation.type == "R", 1, 0)
+fit <- glm(R ~ region + proj - 1, df, family = binomial())
+
+summary(fit)
+```
+
+## Substitution patterns
+
+R:S ratio across different substitution patterns at nucleotide level
+
+```{r}
+df$mutation.signature <- paste(df$from.nt, df$to.nt, sep = ">")
+
+df.3 <- ddply(df, .(mutation.signature, mutation.type), summarize, count = sum(total.clonotypes))
+df.3 <- ddply(df.3, .(mutation.signature), transform, ratio = count / (sum(count) - count))
+df.3 <- subset(df.3, mutation.type == "R")
+
+ggplot(df.3, aes(x = mutation.signature, y = ratio, fill = mutation.signature)) +
+  geom_bar(stat="identity", color="black") + 
+  geom_hline(yintercept = 1, linetype="dashed") + 
+  scale_fill_brewer(palette = "Paired") + 
+  scale_y_continuous("R:S ratio", breaks=0:8) +
+  xlab("") + 
+  theme_bw()
+```
+
+Share of different substitution patterns compared between young and old. Age-related difference observed for certain substitution patterns aross hypermutations.
+
+```{r}
+df.4 <- ddply(df, .(proj, sample, type, replica, mutation.signature), summarize,
+              count = sum(total.clonotypes))
+
+df.4 <- ddply(df.4, .(proj, sample, type, replica), transform,
+              share = count / sum(count))
+
+ggplot(df.4, aes(x = mutation.signature, group = interaction(mutation.signature, proj), 
+                 y = share, fill = proj)) +
+  geom_boxplot() + scale_y_log10(limits = c(0.01, 0.5)) +
+  scale_fill_brewer(palette = "Set1") + 
+  xlab("") + ylab("Share of hypermutations") +
+  theme_bw()
+
+a <- aov(share ~ mutation.signature * proj, df.4)
+summary(a)
+```
+
+Hydropathy change patterns observed at amino acid level. More hydrophilic -> hydrophobic amino acid hypermutations in young compared to old.
+
+```{r}
+aa.classes <- data.frame(aa = strsplit("I,V,L,F,C,M,A,W,G,T,S,Y,P,H,N,D,Q,E,K,R", ",")[[1]],
+                         hydrop = c(rep("hydrophobic", 8), rep("neutral", 6), 
+                                    rep("hydrophilic", 6)))
+
+aa.classes$hydrop <- factor(aa.classes$hydrop, c("hydrophobic", "neutral", "hydrophilic"))
+
+df.5 <- ddply(df, .(proj, sample, type, replica, from.aa, to.aa), summarize,
+              count = sum(total.clonotypes))
+
+df.5 <- merge(df.5, aa.classes, by.x = "from.aa", by.y = "aa")
+df.5 <- merge(df.5, aa.classes, by.x = "to.aa", by.y = "aa")
+#df.5$signature <- paste(df.5$hydrop.x, df.5$hydrop.y, sep = ">")
+
+df.5 <- ddply(df.5, .(proj, sample, type, replica, hydrop.x, hydrop.y), summarize,
+              count = sum(count))
+
+df.5 <- ddply(df.5, .(proj, sample, type, replica), transform,
+              share = count / sum(count))
+
+ggplot(df.5, aes(x=proj, group=proj, y=share, fill = proj)) + geom_boxplot() + 
+  facet_grid(hydrop.x~hydrop.y) + scale_y_log10() +
+  scale_fill_brewer(palette = "Set1") + 
+  xlab("") + ylab("Share of hypermutations") +
+  theme_bw()
+
+hydrop_toint <- function(x) {
+  ifelse(x == "hydrophobic", 1, ifelse(x == "neutral", 0, -1))
+}
+
+df.5$hydrop.change <- with(df.5, hydrop_toint(hydrop.y) - hydrop_toint(hydrop.x))
+
+ggplot(df.5, aes(x=hydrop.change, group = interaction(hydrop.change, proj), y=share, 
+                 fill=proj)) + 
+  geom_boxplot() + scale_y_log10() +
+  xlab("Hydropathy change (hydrophobic>hydrophilic) .. (hydrophilic>hydrophobic)") +
+  ylab("Share of hypermutations") +
   scale_fill_brewer(palette = "Set1") + 
   theme_bw()
 
-ggplot(subset(df.6, type=="RNA"), 
-       aes(x = interaction(from.nt, to.nt), group = interaction(from.nt, to.nt, proj), y = share, fill = proj)) +
-  geom_boxplot() + scale_fill_brewer(palette = "Set1") +
-  theme_bw()
+
+a <- aov(share ~ hydrop.x : hydrop.y + hydrop.x : hydrop.y : proj, df.5)
+summary(a)
+
+t.test(share ~ proj, 
+       subset(df.5, hydrop.y == "hydrophobic" & hydrop.x == "hydrophilic"))
 ```
-
-Mutation patterns (amino acid):
-
-```{r}
-df.6 <- ddply(df, .(proj, type, sample, replica, from.aa, to.aa), summarize, count = sum(total.clonotypes))
-df.6 <- ddply(df.6, .(proj, type, sample, replica), transform, share = count / sum(count))
-
-ggplot(subset(df.6, type=="RNA"), 
-       aes(x = from.aa, y=to.aa, fill = log10(share))) +
-  geom_tile() + 
-  facet_wrap(~proj) +
-  #scale_fill_brewer(palette = "Set1") + 
-  theme_bw()
-```
-
