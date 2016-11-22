@@ -126,7 +126,7 @@ df.4 <- ddply(df.4, .(proj, sample, type, replica), transform,
 ggplot(df.4, aes(x = mutation.signature, group = interaction(mutation.signature, proj), 
                  y = share, fill = proj)) +
   geom_boxplot() + scale_y_log10(limits = c(0.01, 0.5)) +
-  scale_fill_brewer(palette = "Set1") + 
+  scale_fill_brewer("", palette = "Set1") + 
   xlab("") + ylab("Share of hypermutations") +
   theme_bw()
 
@@ -173,7 +173,7 @@ ggplot(df.5, aes(x=hydrop.change, group = interaction(hydrop.change, proj), y=sh
   geom_boxplot() + scale_y_log10() +
   xlab("Hydropathy change (hydrophobic>hydrophilic) .. (hydrophilic>hydrophobic)") +
   ylab("Share of hypermutations") +
-  scale_fill_brewer(palette = "Set1") + 
+  scale_fill_brewer("", palette = "Set1") + 
   theme_bw()
 
 
