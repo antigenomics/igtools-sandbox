@@ -102,7 +102,7 @@ ggplot(rna, aes(x=shm.count, color = proj)) +
 ```{r}
 ggplot(rna, aes(x=clone.id + as.integer(as.factor(rna$proj)) / 2, y=shm.count, color = proj)) + 
   geom_point(shape=21, size=0.5) +
-  facet_wrap(~isotype, scales="free_y") +
+  facet_wrap(~isotype) +
   xlab("Clone rank") + ylab("Hypermutation burden") +
   scale_color_brewer("", palette = "Set1") +
   theme_bw()
@@ -111,7 +111,7 @@ library(ggbeeswarm)
 
 ggplot(rna, aes(str_sub(as.character(interaction(proj, sample)),1,7), shm.count, fill = proj)) + 
   geom_quasirandom(varwidth = TRUE, shape=21, color="black") +
-  facet_wrap(~isotype, scales="free_y") +
+  facet_wrap(~isotype) +
   xlab("") + ylab("Hypermutation burden") +
   scale_fill_brewer("", palette = "Set1") +
   theme_bw() +
