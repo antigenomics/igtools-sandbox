@@ -51,6 +51,8 @@ Summarize frequency, diversity and hypermutation type for each isotype
 ```{r}
 rna.2 <- ddply(rna, .(proj, sample, isotype), summarize, 
                share = sum(clone.fraction), clonotypes = length(clone.fraction), shm.count = sum(shm.count))
+rna.2 <- ddply(rna.2, .(proj, sample), transform, 
+               diversity = clonotypes/sum(clonotypes))
 ```
 
 Isotype usage, displays high variance across donors, and, hopefully, in line with the usage observed in plasma B cell subset
@@ -61,6 +63,18 @@ ggplot(rna.2, aes(x=str_sub(sample,1,3), weight=share, fill = isotype)) +
   facet_wrap(~proj, scales = "free_x") + 
   scale_fill_brewer(palette = "Set1") +
   theme_bw()
+```
+
+Check difference in IgD usage
+
+```{r}
+ggplot(subset(rna.2, isotype == "IGHD")) + 
+  geom_boxplot(aes(x=proj, fill=proj, y=diversity)) +
+  scale_y_log10() +
+  scale_fill_brewer(palette = "Set1") +
+  theme_bw()
+
+t.test(log10(diversity) ~ proj, subset(rna.2, isotype == "IGHD"))
 ```
 
 Overall mutation burden by donor
