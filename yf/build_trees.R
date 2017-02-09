@@ -3,6 +3,7 @@ library(dplyr)
 library(fitdistrplus)
 library(doParallel)
 library(foreach)
+library(igraph)
 
 find_kmers <- function(string, k=5){
   n <- nchar(string) - k + 1
@@ -19,6 +20,7 @@ sum_info <- function(l){
 }
 
 mutations_weight <- function(mutations){
+  # unused function in current version
   w = 1
   #mutations = str_split(str, ',')[[1]]
   for (m in mutations){
@@ -73,6 +75,42 @@ get_arbor_edges <- function(node){
   return(old[which.min(old$mut_between),])
 }
 
+tree_statistics <- function(tree){
+  clone <- data.frame(ndn = character(), freq = double(), freq_sum = double(), leaves = integer(), 
+                      nodes = integer(), mut_in_root = integer(), diameter = integer(), 
+                      mean_mut = double(),total_mut = integer(), branching = double())
+  if (length(V(tree)) > 1){
+    edges <- get.edgelist(tree)
+    root <- setdiff(edges[,1], edges[,2])
+    leaves <- setdiff(edges[,2], edges[,1])
+    freq <- df[as.integer(root),]$freq
+    ndn <- df[as.integer(root),]$ndn
+    mut_in_root <- df$all.mutations[[as.numeric(root)]]
+    
+    mut_from_root <- c()
+    for (l in leaves){
+      mut_in_leave = df$all.mutations[[as.numeric(l)]]
+      shared_mutations = intersect(mut_in_root, mut_in_leave)
+      mut_from_root <- c(mut_from_root, length(mut_in_leave) - length(shared_mutations))
+    }
+    diameter = max(mut_from_root)
+    mean_mut = mean(mut_from_root)
+    mut_sum = sum(mut_from_root)
+    
+    freq_sum = 0
+    for (v in V(tree)){
+      freq_sum = freq_sum + df$freq[[as.numeric(v)]]
+    }
+    path_length <- sapply(shortest_paths(tree, root)$vpath, length)
+    leaves_n = length(leaves)
+    nodes_n = length(V(tree))
+    branching = leaves_n/mean(path_length)
+    clone <- rbind(clone, list(ndn = ndn, freq = freq, freq_sum = freq_sum, leaves = leaves_n, nodes = nodes_n, 
+                mut_in_root = length(mut_in_root), diameter = diameter, mean_mut = mean_mut,
+                total_mut = mut_sum, branching = branching))
+  }
+  return(clone)
+}
 
 
 
@@ -124,4 +162,12 @@ for (sample in c(old, young)){
   node <- df[all_nodes,] %>% dplyr::select(cdr3aa, v, j, freq)
   node$node <- all_nodes
   write.table(node, file=paste0('~/yf/trees/', sample, '.node.txt'), sep='\t', row.names=FALSE, quote=FALSE)
+  
+  #graph analysis
+  g <- graph( edges=interleave(final_edges$n1, final_edges$n2) )
+  g <- set.vertex.attribute(g, 'name', value = as.character(1:length(V(g))))
+  g <- set.edge.attribute(g, 'weight', value = final_edges$mut_between)
+  components <- decompose.graph(g)
+  clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% tree_statistics(x)
+  write.table(clones, file=paste0('~/yf/trees/stat/', sample, '.txt'), sep='\t', row.names=FALSE, quote=FALSE)
 }
