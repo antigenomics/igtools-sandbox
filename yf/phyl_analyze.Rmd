@@ -1,7 +1,7 @@
 ---
 title: "Phylogenetic analysis of clonal trees"
 author: "Anna Obraztsova"
-date: "2/9/2017"
+date: "2/16/2017"
 output: pdf_document
 ---
 
@@ -9,7 +9,7 @@ Diameter is the largest number of mutations between root and leave.
 Branching is a number of leaves divided by mean length of path from root to leave.
 Total.freq is a sum of frequencies of all vertices of tree.
 
-`````{r, warning=FALSE, message=FALSE, fig.height=10}
+```{r, warning=FALSE, message=FALSE, fig.height=10}
 library(ggplot2)
 library(stringr)
 library(reshape2)
@@ -23,7 +23,7 @@ gs <- data.frame()
 
 for (sample in old_rna){
   .df <- read.table(paste('~/yf/trees/stat/yf_old_RNA/', sample, ".txt", sep = ""), header=T, sep="\t")
-  names(.df) <- c('ndn', 'root.freq', 'total.freq', 'total.leaves', 'total.nodes', 'root.mutations', 'diameter', 'mean.path', 'total.mutations', 'branching')
+  names(.df) <- c('ndn', 'root.freq', 'v', 'j', 'total.freq', 'total.leaves', 'total.nodes', 'root.mutations', 'diameter', 'mean.path', 'total.mutations', 'branching')
 	.df$proj <- "old"
 	.df$sample <- sample
 	gs <- rbind(gs, .df)
@@ -31,18 +31,42 @@ for (sample in old_rna){
 
 for (sample in young_rna){
 	.df <- read.table(paste('~/yf/trees/stat/yf_young_RNA/', sample, ".txt", sep = ""), header=T, sep="\t")
-	names(.df) <- c('ndn', 'root.freq', 'total.freq', 'total.leaves', 'total.nodes', 'root.mutations', 'diameter', 'mean.path', 'total.mutations', 'branching')
+	names(.df) <- c('ndn', 'root.freq', 'v', 'j', 'total.freq', 'total.leaves', 'total.nodes', 'root.mutations', 'diameter', 'mean.path', 'total.mutations', 'branching')
 	.df$proj <- "young"
 	.df$sample <- sample
 	gs <- rbind(gs, .df)
 }
 
-gs2 <- gs %>% melt(id=c('ndn', 'proj', 'sample')) %>% 
+gs <- mutate_each(gs, funs(as.double(.)), -ndn, -proj, -sample, -v, -j)
+
+gs2 <- gs %>% dplyr::select(-j, -v) %>%
+  melt(id=c('ndn', 'proj', 'sample')) %>% 
   mutate(name=paste(str_sub(proj, 1, 1), str_sub(sample,1, 3), sep='.')) %>%
   filter(variable != 'total.nodes' & variable != 'mean.path')
   
-              
-ggplot(gs2) + geom_quasirandom(aes(x = name, y = value, group=proj, fill = proj), varwidth = TRUE, shape=21, color="black") +
+first = c('root.freq', 'total.freq', 'total.leaves', 'root.mutations', 'diameter', 'total.mutations')            
+ggplot(filter(gs2, variable %in% first)) + geom_quasirandom(aes(x = name, y = value, group=proj, fill = proj), varwidth = TRUE, shape=21, color="black") +
+facet_wrap(~variable, nrow=4, scales='free') +
+scale_fill_brewer("", palette = "Set1") +
+theme_bw() +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r}
+ggplot(filter(gs2, variable == 'branching')) + geom_quasirandom(aes(x = name, y = log(value), group=proj, fill = proj), varwidth = TRUE, shape=21, color="black") +
+scale_fill_brewer("", palette = "Set1") +
+theme_bw() +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r, fig.height=9}
+gs2.1 <- gs %>% filter(total.freq > 0.0015 & total.freq < 0.01) %>%
+  melt(id=c('ndn', 'proj', 'sample')) %>%
+  mutate(name=paste(str_sub(proj, 1, 1), str_sub(sample,1, 3), sep='.'), value = as.double(value)) %>%
+  filter(variable != 'total.nodes' & variable != 'mean.path')
+
+ggplot(filter(gs2.1, variable %in% first)) + geom_quasirandom(aes(x = name, y = value, group=proj, fill = proj), varwidth = TRUE, shape=21, color="black") +
 facet_wrap(~variable, nrow=4, scales='free') +
 scale_fill_brewer("", palette = "Set1") +
 theme_bw() +
@@ -53,6 +77,43 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```{r, warning=FALSE, message=FALSE, fig.height=3, fig.width=3, fig.show = 'hold'}
 gs3 <- gs2 %>% dplyr::group_by(sample, proj) %>% summarise(n = n())
 ggplot(gs3) + geom_boxplot(aes(x = proj, y = n)) + ggtitle('Total number of clonal families')
+
+gs4 <- gs %>% mutate(single = ifelse(total.leaves == 0, 'singleton', 'tree')) %>%
+  dplyr::group_by(sample, proj, single) %>% summarise(n = n()) %>%
+  dcast(sample + proj ~ single)
+ggplot(gs4, aes(x=proj, y = singleton/tree)) + geom_boxplot() + ggtitle('Single clones number to clonal trees number')
+```
+
+
+```{r, warning=FALSE, message=FALSE, fig.height=3, fig.width=3, fig.show = 'hold'}
+gs4.1 <- gs %>% mutate(single = ifelse(total.leaves == 0, 'singleton', 'tree')) %>%
+  dplyr::group_by(sample, proj, single) %>% summarise(n = sum(total.freq)) %>%
+  dcast(sample + proj ~ single)
+ggplot(gs4.1, aes(x=proj, y = singleton/tree)) + geom_boxplot() + ggtitle('Single clones total frequency to clonal trees total frequency')
+```
+
+
+```{r}
+gs4.2 <- gs %>% mutate(single = ifelse(total.leaves == 0, 'singleton', 'tree')) %>%
+  mutate(name=paste(str_sub(proj, 1, 1), str_sub(sample,1, 3), sep='.'))
+ggplot(gs4.2, aes(x = name, y = root.mutations, group=interaction(sample, single), fill=single)) + geom_boxplot() + ggtitle('SHM number in root') +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r, fig.height=15}
+gs5 <- gs %>% dplyr::group_by(sample, proj, v, j) %>% summarise(total.freq = sum(total.freq))
+
+ggplot(filter(gs5, proj=='old'), aes(x = v, y = j, size=total.freq, col='brown2')) + geom_point() +
+facet_wrap(~sample, ncol=1, scales='free') +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r, fig.height=15}
+ggplot(filter(gs5, proj=='young'), aes(x = v, y = j, size=total.freq, col='darkcyan')) + geom_point() +
+facet_wrap(~sample, ncol=1, scales='free') +
+theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 

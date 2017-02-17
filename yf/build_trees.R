@@ -70,11 +70,6 @@ interleave <- function(v1, v2){
   return(z)
 }
 
-get_arbor_edges <- function(node){
-  old <- filter(inter, n2 == node)
-  return(old[which.min(old$mut_between),])
-}
-
 tree_statistics <- function(tree){
   clone <- data.frame(ndn = character(), freq = double(), freq_sum = double(), leaves = integer(), 
                       nodes = integer(), mut_in_root = integer(), diameter = integer(), 
@@ -86,6 +81,8 @@ tree_statistics <- function(tree){
     freq <- df[as.integer(root),]$freq
     ndn <- df[as.integer(root),]$ndn
     mut_in_root <- df$all.mutations[[as.numeric(root)]]
+    v <- df[as.integer(root),]$v
+    j <- df[as.integer(root),]$j
     
     mut_from_root <- c()
     for (l in leaves){
@@ -97,15 +94,12 @@ tree_statistics <- function(tree){
     mean_mut = mean(mut_from_root)
     mut_sum = sum(mut_from_root)
     
-    freq_sum = 0
-    for (v in V(tree)){
-      freq_sum = freq_sum + df$freq[[as.numeric(v)]]
-    }
+    freq_sum = sum(df[as.numeric(names(V(tree))),]$freq)
     path_length <- sapply(shortest_paths(tree, root)$vpath, length)
     leaves_n = length(leaves)
     nodes_n = length(V(tree))
     branching = leaves_n/mean(path_length)
-    clone <- rbind(clone, list(ndn = ndn, freq = freq, freq_sum = freq_sum, leaves = leaves_n, nodes = nodes_n, 
+    clone <- rbind(clone, list(ndn = ndn, freq = freq, v=v, j=j, freq_sum = freq_sum, leaves = leaves_n, nodes = nodes_n, 
                 mut_in_root = length(mut_in_root), diameter = diameter, mean_mut = mean_mut,
                 total_mut = mut_sum, branching = branching))
   }
@@ -169,5 +163,11 @@ for (sample in c(old, young)){
   g <- set.edge.attribute(g, 'weight', value = final_edges$mut_between)
   components <- decompose.graph(g)
   clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% tree_statistics(x)
+  singletons <- df[setdiff(1:nrow(df), all_nodes), ] %>% dplyr::select(ndn, v, j, freq, all.mutations) %>%
+    mutate(freq_sum = freq, leaves = 0, nodes = 1, diameter = 0,
+           mean_mut = 0, total_mut = 0, branching = 0)
+  mut_in_root <- sapply(singletons$all.mutations, length)
+  singletons <- dplyr::select(cbind(singletons, mut_in_root), -all.mutations)
+  clones <- rbind(clones, singletons)
   write.table(clones, file=paste0('~/yf/trees/stat/', sample, '.txt'), sep='\t', row.names=FALSE, quote=FALSE)
 }
