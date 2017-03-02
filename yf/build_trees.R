@@ -70,10 +70,16 @@ interleave <- function(v1, v2){
   return(z)
 }
 
+get_arbor_edges <- function(node){
+  old <- filter(inter, n2 == node)
+  return(old[which.min(old$mut_between),])
+}
+
 tree_statistics <- function(tree){
   clone <- data.frame(ndn = character(), freq = double(), freq_sum = double(), leaves = integer(), 
                       nodes = integer(), mut_in_root = integer(), diameter = integer(), 
-                      mean_mut = double(),total_mut = integer(), branching = double())
+                      mean_mut = double(),total_mut = integer(), branching = double(),
+                      mean.degree = double())
   if (length(V(tree)) > 1){
     edges <- get.edgelist(tree)
     root <- setdiff(edges[,1], edges[,2])
@@ -99,9 +105,10 @@ tree_statistics <- function(tree){
     leaves_n = length(leaves)
     nodes_n = length(V(tree))
     branching = leaves_n/mean(path_length)
+    mean.degree = mean(degree(tree))
     clone <- rbind(clone, list(ndn = ndn, freq = freq, v=v, j=j, freq_sum = freq_sum, leaves = leaves_n, nodes = nodes_n, 
                 mut_in_root = length(mut_in_root), diameter = diameter, mean_mut = mean_mut,
-                total_mut = mut_sum, branching = branching))
+                total_mut = mut_sum, branching = branching, mean.degree = mean.degree))
   }
   return(clone)
 }
@@ -165,7 +172,7 @@ for (sample in c(old, young)){
   clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% tree_statistics(x)
   singletons <- df[setdiff(1:nrow(df), all_nodes), ] %>% dplyr::select(ndn, v, j, freq, all.mutations) %>%
     mutate(freq_sum = freq, leaves = 0, nodes = 1, diameter = 0,
-           mean_mut = 0, total_mut = 0, branching = 0)
+           mean_mut = 0, total_mut = 0, branching = 0, mean.degree = 0)
   mut_in_root <- sapply(singletons$all.mutations, length)
   singletons <- dplyr::select(cbind(singletons, mut_in_root), -all.mutations)
   clones <- rbind(clones, singletons)
