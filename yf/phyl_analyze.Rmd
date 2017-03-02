@@ -44,12 +44,20 @@ gs2 <- gs %>% dplyr::select(-j, -v) %>%
   mutate(name=paste(str_sub(proj, 1, 1), str_sub(sample,1, 3), sep='.')) %>%
   filter(variable != 'total.nodes' & variable != 'mean.path')
   
-first = c('root.freq', 'total.freq', 'total.leaves', 'root.mutations', 'diameter', 'total.mutations', 'mean.degree')            
+first = c('root.freq', 'total.freq', 'total.leaves', 'root.mutations', 'diameter', 'total.mutations', 'mean.degree')
+
 ggplot(filter(gs2, variable %in% first)) + geom_quasirandom(aes(x = name, y = value, group=proj, fill = proj), varwidth = TRUE, shape=21, color="black") +
 facet_wrap(~variable, nrow=4, scales='free') +
 scale_fill_brewer("", palette = "Set1") +
 theme_bw() +
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r, fig.height=9}
+for (i in first){
+  cat(i, 't-Test p-value\n', t.test(gs[[i]] ~ gs[['proj']])$p.value*nrow(gs), '\n')
+}
 ```
 
 
@@ -100,7 +108,7 @@ summary(a)
 ```
 
 
-```{r, fig.height=15}
+```{r, eval=FALSE, fig.height=15}
 gs5 <- gs %>% dplyr::group_by(sample, proj, v, j) %>% summarise(total.freq = sum(total.freq))
 
 ggplot(filter(gs5, proj=='old'), aes(x = v, y = j, size=total.freq)) + geom_point() +
@@ -109,7 +117,7 @@ theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 
-```{r, fig.height=15}
+```{r, eval=FALSE, fig.height=15}
 ggplot(filter(gs5, proj=='young'), aes(x = v, y = j, size=total.freq)) + geom_point() +
 facet_wrap(~sample, ncol=1, scales='free') +
 theme(axis.text.x = element_text(angle = 45, hjust = 1))
