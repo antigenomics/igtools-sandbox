@@ -4,62 +4,13 @@ library(fitdistrplus)
 library(doParallel)
 library(foreach)
 library(igraph)
+library(muscle)
+library(Biostrings)
 
 find_kmers <- function(string, k=5){
   n <- nchar(string) - k + 1
   kmers <- str_sub(string, 1:n, 1:n + k - 1)
   return(kmers)
-}
-
-info <- function(kmer){
-  return(kmer.df$neg_ln[kmer.df$kmer == kmer])
-}
-
-sum_info <- function(l){
-  return( sum(unlist(lapply(l, info))) )
-}
-
-mutations_weight <- function(mutations){
-  # unused function in current version
-  w = 1
-  #mutations = str_split(str, ',')[[1]]
-  for (m in mutations){
-    mut = str_extract(m, '[>TAGC]+')
-    if (str_sub(m, 1, 1)  == 'S'){
-      w = w * filter(sub.df, from.to==mut)$freq
-    }
-    else{
-      w = w * filter(indel.df, type==str_sub(m, 1, 1), len==length(mut))$freq
-    }
-  }
-  return(w)
-}
-
-inter_info <- function(i){
-  inf = data.frame(matrix(vector(), 0, 6, dimnames=list(c(), c("n1", "n2", "mutual", "inf1", "inf2", "mutations"))),
-                  stringsAsFactors=F)
-  for (j in (i+1):length(kmers)){
-    if (df$v[i] == df$v[j] & df$j[i] == df$j[j]){
-      mut.i = df$all.mutations[[i]]
-      mut.j = df$all.mutations[[j]]
-      shared_mutations = intersect(mut.i, mut.j)
-      
-      if (length(shared_mutations) == length(mut.i) | length(shared_mutations) == length(mut.j)){
-        n1 = ifelse(length(shared_mutations) == length(mut.i), i, j)
-        n2 = ifelse(n1 == i, j, i)
-        shared_kmers = intersect(kmers[[i]], kmers[[j]])
-        mutations_between = setdiff(df$all.mutations[[n2]], df$all.mutations[[n1]])
-        
-        row <- list(n1 = n1, n2 = n2, mutual = sum_info(shared_kmers), 
-                    inf1 = sum_info(kmers[[n1]]), inf2 = sum_info(kmers[[n2]]),
-                    mutations = NA, shared_kmers_num = length(shared_kmers),
-                    w = mutations_weight(mutations_between), mut_between = length(mutations_between))
-        inf <- rbind(inf, row)
-        inf$mutations[nrow(inf)] <- paste(mutations_between, collapse=',')
-      }
-    }
-  }
-  return(inf)
 }
 
 interleave <- function(v1, v2){
@@ -70,60 +21,209 @@ interleave <- function(v1, v2){
   return(z)
 }
 
-get_arbor_edges <- function(node){
-  old <- filter(inter, n2 == node)
-  return(old[which.min(old$mut_between),])
+extract_mut <- function(mutations){
+  #delete position from mutation record
+  mut_type <- sapply(mutations, function(x) str_extract(x, '[SID]'))
+  subs <- sapply(mutations[which(mut_type == 'S')], function(x) str_extract(x, '[>TAGC]+'))
+  ins <- sapply(mutations[which(mut_type == 'I')], function(x) paste0('I', nchar(str_extract(x, '[TAGC]+'))))
+  dels <- sapply(mutations[which(mut_type == 'D')], function(x) paste0('D', nchar(str_extract(x, '[TAGC]+'))))
+  unlist(c(subs, ins, dels))
 }
 
-tree_statistics <- function(tree){
-  clone <- data.frame(ndn = character(), freq = double(), freq_sum = double(), leaves = integer(), 
-                      nodes = integer(), mut_in_root = integer(), diameter = integer(), 
-                      mean_mut = double(),total_mut = integer(), branching = double(),
+mutations_weight <- function(mutations){
+  prod(merge(data.frame(mutation = mutations), frequencies)$freq)
+}
+
+merge_gaps <- function(mat, gaps, i){
+  #count length of indel and merge gaps in an alignment matrix
+  indel.num <- nrow(gaps[[i]])
+  v1 <- mat[,i]
+  v2 <- mat[,-i]
+  if (indel.num > 0){
+    for (x in 1:indel.num){
+      v2 <- c( v2[0:(gaps[[i]][x,'start']-1)], gaps[[i]][x,'end']-gaps[[i]][x,'start']+1, 
+                 v2[(gaps[[i]][x,'end']+1):length(v2)] )
+      v1 <- c( v1[0:(gaps[[i]][x,'start']-1)], '-', v1[(gaps[[i]][x,'end']+1):length(v1)] )
+      gaps[[i]] <- gaps[[i]] - (gaps[[i]][x,'end']-gaps[[i]][x,'start'])
+    }
+  }
+  matrix(c(v1,v2), ncol=2)
+}
+
+align2table <- function(alignment){
+  #convert MultipleAlignment object to table with merged gaps
+  gaps <- sapply(alignment, function(x) str_locate_all(x, "-+")[1])
+  mat <- sapply(alignment, function(x) str_split(x, '')[[1]])
+  for (i in 1:2){
+    mat <- merge_gaps(mat, gaps, i)
+  }
+  data.frame(s1 = mat[,2], s2 = mat[,1])
+}
+
+get_mutations <- function(s1, s2){
+  DNAset = DNAStringSet(c(s1, s2))
+  alignment <- unmasked(muscle(DNAset, quiet = TRUE))
+  aln.table <- align2table(alignment)
+
+  aln.table %>% mutate(s1 = as.character(s1), s2 = as.character(s2)) %>%
+    filter(s1 != s2) %>%
+    mutate(n1 = ifelse(s1 == '-', paste0('D', s2), 
+                         ifelse(s2 == '-', paste0('I', s1), paste(s1, s2, sep='>'))),
+           n2 = ifelse(s2 == '-', paste0('D', s1), 
+                         ifelse(s1 == '-', paste0('I', s2), paste(s2, s1, sep='>')))) %>%
+    dplyr::select(-s1, -s2)
+}
+
+define_parent <- function(mut.table){
+  score1 <- mutations_weight(mut.table$n1)
+  score2 <- mutations_weight(mut.table$n2)
+
+  parent = ifelse(score1 > score2, 'n1', 'n2')
+  list(parent = parent, mutations=dplyr::select(cdr3.muts, -get(parent))[,1])
+}
+
+pair_compare <- function(i, gm = 'yes', alpha = 1e-08){
+  # find all clonotypes related to clonotype number i
+  cdr3.muts.lst <- list()
+  non.cdr3.muts.lst <- list()
+  n1.lst <- c()
+  n2.lst <- c()
+  kmer.p.value.lst <- c()
+  mutations.num.lst <- c()
+  
+  for (j in (i+1):nrow(df)){
+    #cat(i,' - ',j,'\n')
+    if (df$v[i] == df$v[j] & df$j[i] == df$j[j]){
+      shared.kmers = intersect(kmers[[i]], kmers[[j]])
+      shared.kmer.inf = sum(unlist(lapply(shared.kmers, function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
+      inf1 = sum(unlist(lapply(kmers[[i]], function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
+      inf2 = sum(unlist(lapply(kmers[[j]], function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
+      p.value = 1 - pgamma(shared.kmer.inf/(inf1*inf2), shape = gamma.params$estimate['shape'], rate = gamma.params$estimate['rate'])
+      
+      if (p.value < alpha){
+        
+        if (gm == 'yes'){ #if germline mutations are available
+          mut.i = df$all.mutations[[i]]
+          mut.j = df$all.mutations[[j]]
+          shared.muts = intersect(mut.i, mut.j)
+          
+          if (length(shared.muts) == length(mut.i) | length(shared.muts) == length(mut.j)){
+            n1 = ifelse(length(shared.muts) == length(mut.i),i, j)
+            n2 = ifelse(n1 == i, j, i)
+            cdr3.muts <- list(get_mutations(df$cdr3nt[n1], df$cdr3nt[n2])$n2)
+            muts.between = list(extract_mut(setdiff(df$all.mutations[[n2]], df$all.mutations[[n1]])))
+            
+            cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- cdr3.muts
+            non.cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- muts.between
+            n1.lst <- c(n1.lst, n1)
+            n2.lst <- c(n2.lst, n2)
+            kmer.p.value.lst <- c(kmer.p.value.lst, p.value)
+            mutations.num.lst <- c(mutations.num.lst, mutations.num = 
+                                     length(muts.between[[1]]) + length(cdr3.muts[[1]]))
+          }
+        }
+        
+        else {
+          dp = define_parent(cdr3.muts)
+          cdr3.muts <- dplyr::select(cdr3.muts, -get(dp$parent))[,1]
+          row <- list(n1 = ifelse(dp$parent == 'n1', i, j), n2 = ifelse(dp$parent == 'n1', j, i),
+                      kmer.p.value = p.value, mutations.num = dp$mutations.num)
+          
+          cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- cdr3.muts
+          n1.lst <- c(n1.lst, n1)
+          n2.lst <- c(n2.lst, n2)
+          kmer.p.value.lst <- c(kmer.p.value.lst, p.value)
+          mutations.num.lst <- c(mutations.num.lst, mutations.num = length(dp$mutations))
+          
+        }
+      }
+    }
+  }
+  if (gm == 'yes'){
+    data.frame(cdr3.muts = I(cdr3.muts.lst), non.cdr3.muts = I(non.cdr3.muts.lst),n1 = n1.lst,
+               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst)
+  }
+  else{
+    data.frame(cdr3.muts = I(cdr3.muts.lst), n1 = n1.lst,
+               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst)
+  }
+}
+
+get_arbor_edge <- function(node){
+  old <- filter(pairs, n2 == node)
+  old[which.min(old$mut.num),]
+}
+
+clone_info <- function(tree){
+  clone <- data.frame(root = numeric(), cdr3nt = character(), freq = double(), freq.sum = double(), 
+                      leaves = integer(), nodes = integer(), root.mut = integer(), diameter = integer(),
+                      mean.mut = double(), total.mut = integer(), branching = double(),
                       mean.degree = double())
+  
   if (length(V(tree)) > 1){
     edges <- get.edgelist(tree)
     root <- setdiff(edges[,1], edges[,2])
+    root.i = as.integer(root)
+    cdr3nt <- df[root.i,]$cdr3nt
+    freq <- df[root.i,]$freq
+    freq.sum = sum(df[as.numeric(names(V(tree))),]$freq)
+    
     leaves <- setdiff(edges[,2], edges[,1])
-    freq <- df[as.integer(root),]$freq
-    ndn <- df[as.integer(root),]$ndn
-    mut_in_root <- df$all.mutations[[as.numeric(root)]]
-    v <- df[as.integer(root),]$v
-    j <- df[as.integer(root),]$j
+    mut.from.root <- distances(tree, root)
+    root.mut <- length(df$all.mutations[[root.i]])
     
-    mut_from_root <- c()
-    for (l in leaves){
-      mut_in_leave = df$all.mutations[[as.numeric(l)]]
-      shared_mutations = intersect(mut_in_root, mut_in_leave)
-      mut_from_root <- c(mut_from_root, length(mut_in_leave) - length(shared_mutations))
-    }
-    diameter = max(mut_from_root)
-    mean_mut = mean(mut_from_root)
-    mut_sum = sum(mut_from_root)
-    
-    freq_sum = sum(df[as.numeric(names(V(tree))),]$freq)
-    path_length <- sapply(shortest_paths(tree, root)$vpath, length)
-    leaves_n = length(leaves)
-    nodes_n = length(V(tree))
-    branching = leaves_n/mean(path_length)
+    diameter = max(mut.from.root)
+    mean.mut = mean(mut.from.root)
+    total.mut = sum(E(tree)$weight)
+  
+    branching = length(leaves)/mean.mut
     mean.degree = mean(degree(tree))
-    clone <- rbind(clone, list(ndn = ndn, freq = freq, v=v, j=j, freq_sum = freq_sum, leaves = leaves_n, nodes = nodes_n, 
-                mut_in_root = length(mut_in_root), diameter = diameter, mean_mut = mean_mut,
-                total_mut = mut_sum, branching = branching, mean.degree = mean.degree))
+    
+    clone <- rbind(clone, list(root = root, cdr3nt = cdr3nt, freq = freq, freq.sum = freq.sum, 
+                   leaves = length(leaves), nodes = length(V(tree)), root.mut = root.mut, 
+                   diameter = diameter, mean.mut = mean.mut, total.mut = total.mut, 
+                   branching = branching, mean.degree = mean.degree))
   }
   return(clone)
 }
 
+make_cytoscape_files <- function(edge.table){
+  #write net file
+  net <- data.frame(from = edge.table$n1, to = edge.table$n2, interaction = rep('shm', nrow(edge.table)))
+  write.table(net, file=paste0('~/yf/trees/', sample, '.net.txt'), sep='\t', row.names=FALSE, quote=FALSE)
+
+  # write edge file
+  edge <- data.frame(edge = paste(edge.table$n1, '(shm)', edge.table$n2, sep=' '), mutations = edge.table$mutations)
+  write.table(edge, file=paste0('~/yf/trees/', sample, '.edge.txt'), sep='\t', row.names=FALSE, quote=FALSE)
+
+  # write node file
+  all.nodes <- unique(c(edge.table$n1, edge.table$n2))
+  node <- df[all.nodes,] %>% dplyr::select(cdr3aa, v, j, freq)
+  node$node <- all.nodes
+  write.table(node, file=paste0('~/yf/trees/', sample, '.node.txt'), sep='\t', row.names=FALSE, quote=FALSE)
+}
 
 
+
+
+#import frequencies of k-mers and mutations and fit_gamma
+load('~/yf/mut_frequencies.rda')
+load('~/yf/kmer_frequencies.rda')
+load('~/yf/gamma_params.rda')
+
+kmer.df$neg_ln <- -log(kmer.df$freq)
 
 old <- paste0('yf_old_RNA/', c("Abdulain", "Ilgen", "Mamaev", "Smirnov", "Vlasov"))
 young <- paste0('yf_young_RNA/', c("Antipyat", "Epifancev", "Hadjibekov", "Koshkin", "Kovalchuk"))
+
+cl <- makeCluster(detectCores())
+registerDoParallel(cl)
 
 for (sample in c(old, young)){
   #prepare dataset
   df <- read.table(paste0('~/yf/', sample, '.clones.txt'), header=T, sep="\t")
   df <- df %>% mutate(all.mutations=paste(mutations.nt.FR1, mutations.nt.CDR1, mutations.nt.FR2, mutations.nt.CDR2,
-                           mutations.nt.FR3, mutations.nt.CDR3, mutations.nt.FR4, sep=','),
+                                          mutations.nt.FR3, mutations.nt.CDR3, mutations.nt.FR4, sep=','),
                       cdr3nt = as.character(cdr3nt)) %>%
     mutate(all.mutations = str_extract_all(all.mutations, '([\\w\\d>:]+)'),
            ndn = str_sub(cdr3nt, pmax(0, v.end.in.cdr3-4), pmin(j.start.in.cdr3+4, nchar(cdr3nt))))
@@ -131,50 +231,31 @@ for (sample in c(old, young)){
   df$v <- str_sub(str_extract(df$v, '(.+)\\*'), 1, -2)
   df$j <- str_sub(str_extract(df$j, '(.+)\\*'), 1, -2)
   
-  #import frequencies of k-mers and mutations and fit_gamma
-  load('~/yf/frequencies.rda')
-  kmer.df$neg_ln <- -log(kmer.df$freq)
-  sub.df$neg_ln <- -log(sub.df$freq)
-  indel.df$neg_ln <- -log(indel.df$freq)
-  
   # list all 5-mers
-  cl <- makeCluster(8)
-  registerDoParallel(cl)
   kmers <- foreach(i = df$ndn, .packages='stringr') %dopar% find_kmers(i)
   
   # get and filter edges
-  inter <- foreach(x = 1:(length(kmers)-1), .combine='rbind', .packages = c('dplyr', 'stringr')) %dopar% inter_info(x)
-  
-  inter <- inter %>% mutate(p_value = 1 - pgamma(mutual/(inf1*inf2), shape = fit_gamma$estimate['shape'], rate = fit_gamma$estimate['rate']),
-                            edge = paste(n1,n2,sep='_')) %>% filter(p_value < 1e-08)
-  
-  final_edges <- foreach(x = 1:length(kmers), .combine='rbind', .packages = c('dplyr')) %dopar% get_arbor_edges(x)
-  
-  #write net file
-  net <- data.frame(from = final_edges$n1, to = final_edges$n2, interaction = rep('shm', nrow(final_edges)))
-  write.table(net, file=paste0('~/yf/trees/', sample, '.net.txt'), sep='\t', row.names=FALSE, quote=FALSE)
-  
-  # write edge file
-  edge <- data.frame(edge = paste(final_edges$n1, '(shm)', final_edges$n2, sep=' '), mutations = final_edges$mutations)
-  write.table(edge, file=paste0('~/yf/trees/', sample, '.edge.txt'), sep='\t', row.names=FALSE, quote=FALSE)
-  
-  # write node file
-  all_nodes <- unique(c(final_edges$n1, final_edges$n2))
-  node <- df[all_nodes,] %>% dplyr::select(cdr3aa, v, j, freq)
-  node$node <- all_nodes
-  write.table(node, file=paste0('~/yf/trees/', sample, '.node.txt'), sep='\t', row.names=FALSE, quote=FALSE)
+  pairs <- foreach(x = 1:(nrow(df)-1), .combine='rbind', .packages = c('dplyr', 'stringr', 'Biostrings', 'muscle')) %dopar% pair_compare(x)
+  final.pairs <- foreach(x = 1:nrow(df), .combine='rbind', .packages = c('dplyr')) %dopar% get_arbor_edge(x)
   
   #graph analysis
-  g <- graph( edges=interleave(final_edges$n1, final_edges$n2) )
-  g <- set.vertex.attribute(g, 'name', value = as.character(1:length(V(g))))
-  g <- set.edge.attribute(g, 'weight', value = final_edges$mut_between)
+  g <- graph( edges=as.character(interleave(final.pairs$n1, final.pairs$n2)) )
+  g <- set.edge.attribute(g, 'weight', value = final.pairs$mut.num)
   components <- decompose.graph(g)
-  clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% tree_statistics(x)
-  singletons <- df[setdiff(1:nrow(df), all_nodes), ] %>% dplyr::select(ndn, v, j, freq, all.mutations) %>%
-    mutate(freq_sum = freq, leaves = 0, nodes = 1, diameter = 0,
-           mean_mut = 0, total_mut = 0, branching = 0, mean.degree = 0)
-  mut_in_root <- sapply(singletons$all.mutations, length)
-  singletons <- dplyr::select(cbind(singletons, mut_in_root), -all.mutations)
+  clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% clone_info(x)
+  clones$single <- FALSE
+  clones <- mutate(clones, root = as.integer(root), cdr3nt = as.character(cdr3nt))
+  
+  singletons <- df[-as.numeric(names(V(g))), ] %>% dplyr::select(cdr3nt, freq, all.mutations) %>%
+    mutate(freq.sum = freq, leaves = 0, nodes = 1, diameter = 0,
+           mean.mut = 0, total.mut = 0, branching = 0, mean.degree = 0, single = TRUE)
+  singletons$root.mut <- sapply(singletons$all.mutations, length)
+  singletons$root <- setdiff(1:nrow(df), as.numeric(names(V(g))))
+  singletons <- dplyr::select(singletons, -all.mutations)
+  
   clones <- rbind(clones, singletons)
+  
   write.table(clones, file=paste0('~/yf/trees/stat/', sample, '.txt'), sep='\t', row.names=FALSE, quote=FALSE)
 }
+
+stopCluster(cl)
