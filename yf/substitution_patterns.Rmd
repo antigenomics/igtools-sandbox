@@ -1,7 +1,7 @@
 ---
-title: "Distribution, RS ratio and patterns of SHM"
+title: "Distribution, RS ratio and patterns of novel SHM"
 author: "Mikhail Shugay, Anna Obraztsova"
-date: "11/17/2016"
+date: "17/04/2017"
 output:
   pdf_document: default
   html_document: default
@@ -14,7 +14,7 @@ Load preprocessed data
 ```{r, warning=FALSE, message=FALSE}
 library(plyr)
 library(ggplot2)
-load("sp.Rda")
+load("sp_new.Rda")
 df <- subset(df, type == "RNA")
 df$region <- factor(df$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
 df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
@@ -180,6 +180,7 @@ ggplot(df.5, aes(x=hydrop.change, group = interaction(hydrop.change, proj), y=sh
 a <- aov(share ~ hydrop.x : hydrop.y + hydrop.x : hydrop.y : proj, df.5)
 summary(a)
 
-t.test(share ~ proj, 
-       subset(df.5, hydrop.y == "hydrophobic" & hydrop.x == "hydrophilic"))
+#not enough 'x' observations
+#t.test(share ~ proj, 
+#       subset(df.5, hydrop.y == "hydrophobic" & hydrop.x == "hydrophilic"))
 ```
