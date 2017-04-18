@@ -84,6 +84,8 @@ pair_compare <- function(i, gm = 'yes', alpha = 1e-08){
   n2.lst <- c()
   kmer.p.value.lst <- c()
   mutations.num.lst <- c()
+  v.lst <- c()
+  j.lst <- c()
   
   for (j in (i+1):nrow(df)){
     #cat(i,' - ',j,'\n')
@@ -114,6 +116,8 @@ pair_compare <- function(i, gm = 'yes', alpha = 1e-08){
             kmer.p.value.lst <- c(kmer.p.value.lst, p.value)
             mutations.num.lst <- c(mutations.num.lst, mutations.num = 
                                      length(muts.between[[1]]) + length(cdr3.muts[[1]]))
+            v.lst <- c(v.lst, df$v[i])
+            j.lst <- c(j.lst, df$j[i])
           }
         }
         
@@ -128,6 +132,8 @@ pair_compare <- function(i, gm = 'yes', alpha = 1e-08){
           n2.lst <- c(n2.lst, n2)
           kmer.p.value.lst <- c(kmer.p.value.lst, p.value)
           mutations.num.lst <- c(mutations.num.lst, mutations.num = length(dp$mutations))
+          v.lst <- c(v.lst, df$v[i])
+          j.lst <- c(j.lst, df$j[i])
           
         }
       }
@@ -135,11 +141,13 @@ pair_compare <- function(i, gm = 'yes', alpha = 1e-08){
   }
   if (gm == 'yes'){
     data.frame(cdr3.muts = I(cdr3.muts.lst), non.cdr3.muts = I(non.cdr3.muts.lst),n1 = n1.lst,
-               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst)
+               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst,
+               v = v.lst, j = j.lst)
   }
   else{
     data.frame(cdr3.muts = I(cdr3.muts.lst), n1 = n1.lst,
-               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst)
+               n2 = n2.lst, kmer.p.value = kmer.p.value.lst, mut.num = mutations.num.lst,
+               v = v.lst, j = j.lst)
   }
 }
 
@@ -224,7 +232,6 @@ for (sample in c(old, young)){
                       cdr3nt = as.character(cdr3nt)) %>%
     mutate(all.mutations = str_extract_all(all.mutations, '([\\w\\d>:]+)'),
            ndn = str_sub(cdr3nt, pmax(0, v.end.in.cdr3-4), pmin(j.start.in.cdr3+4, nchar(cdr3nt))))
-  #df <- df %>% group_by(cdr3nt, v.end.in.cdr3, j.start.in.cdr3, v, j, all.mutations)  %>% summarise(sample = 'raji')
   df$v <- str_sub(str_extract(df$v, '(.+)\\*'), 1, -2)
   df$j <- str_sub(str_extract(df$j, '(.+)\\*'), 1, -2)
   
@@ -255,14 +262,15 @@ for (sample in c(old, young)){
   write.table(clones, file=paste0('trees/stat/', sample, '.txt'), sep='\t', row.names=FALSE, quote=FALSE)
   
   #filter shm table
-  type = str_extract(sample, '.NA')
   patient = str_sub(str_extract(sample, '\\/(.+)'), 2)
   proj = str_sub(str_extract(sample, 'yf_[^_]+_'), 4, -2)
     
-  .new.shm <- dplyr::select(final.pairs, n2, non.cdr3.muts)
-  .new.shm$pos <- sapply(.new.shm$non.cdr3.muts, function(x) str_extract(unlist(x), '\\d+'))
-  .new.shm <- .new.shm %>% unnest(pos = pos) %>% mutate(type = type, sample = patient)
-  new.shm <- rbind(new.shm, .new.shm)
+  .new.shm <- dplyr::select(final.pairs, n2, non.cdr3.muts, v, j)
+  .new.shm$muts <- sapply(.new.shm$non.cdr3.muts, unlist)
+  .new.shm <- .new.shm %>% unnest(muts = muts) %>%
+    mutate(pos = str_extract(muts, '\\d+'), from=str_sub(str_extract(muts, '.>'),1,1),
+           to = str_sub(muts,-1,-1), sample = patient)
+  new.shm <- rbind(new.shm, dplyr::select(.new.shm, -muts))
   
   .cdr3.shm <- final.pairs[sapply(final.pairs$cdr3.muts, function(x) length(x[[1]])) > 0,]
   .cdr3.shm <- mutate(.cdr3.shm, proj=proj, sample=sample, type=type, replica=1, allele.rate=0,
@@ -273,12 +281,27 @@ for (sample in c(old, young)){
 
 stopCluster(cl)
 
-#preprocessed shm table
+#use preprocessed shm table
 load("sp.Rda")
-shm <- df
+shm <- df %>% filter(type == 'RNA') %>%
+  unnest(clonotype.id = clonotype.ids)
 
-new.shm <- transmute(new.shm, clonotype.id=n2-1, pos.nt=as.integer(pos), sample=sample, type=type)
-new.shm.1 <- merge(new.shm, shm, by=c('clonotype.id', 'pos.nt', 'sample', 'type'))
-df <- new.shm.1
+new.shm.1 <- dplyr::select(new.shm, clonotype.id = n2, pos.nt=pos, from.nt=from, to.nt=to, sample) %>%
+  mutate(pos.nt = as.integer(pos.nt), clonotype.id = clonotype.id - 1)
+
+new.shm.2 <- merge(new.shm.1, shm, by=c('clonotype.id', 'sample', 'pos.nt', 'from.nt', 'to.nt'))
+new.shm.2$total.clonotypes <- 1
+
+df <- new.shm.2 %>% dplyr::group_by(proj, sample, type, replica, segment.name, region, 
+                                    pos.nt, from.nt, to.nt, pos.aa, from.aa, to.aa) %>%
+  dplyr::summarise(total.clonotypes=sum(total.clonotypes))
+
+df$segment.name <- factor(df$segment.name)
+df$region <- factor(df$region)
+df$from.nt <- factor(df$from.nt)
+df$from.aa <- factor(df$from.aa)
+df$to.nt <- factor(df$to.nt)
+df$to.aa <- factor(df$to.aa)
+
 save(df, file='sp_new.Rda')
 
