@@ -27,7 +27,7 @@ load_sample <- function(sample, proj, type) {
     .df$sample <- sample
     .df$replica <- replica
     
-    .df <- subset(.df, mutation.type == "Substitution" & from.aa != "*" & to.aa != "*" & segment == "V")
+    .df <- subset(.df, mutation.type == "Substitution" & from.aa != "*" & to.aa != "*")
   }
   
   .df
@@ -64,6 +64,7 @@ df <- ddply(df, .(proj, sample, type, replica,
                   pos.nt, from.nt, to.nt,
                   pos.aa, from.aa, to.aa),
             summarize,
+            clonotype.ids = list(clonotype.id),
             rate = sum(freq),
             total.clonotypes = sum(clonotypes), 
             allele.rate = sum(freq / segment.freq) * length(segment.freq), 
