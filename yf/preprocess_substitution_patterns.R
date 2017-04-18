@@ -60,7 +60,6 @@ library(doMC)
 doMC::registerDoMC(cores=50) 
 
 df <- ddply(df, .(proj, sample, type, replica,
-                  clonotype.id,
                   segment.name, region,
                   pos.nt, from.nt, to.nt,
                   pos.aa, from.aa, to.aa),
