@@ -126,5 +126,5 @@ shm <- rbind(dplyr::select(aging.shm.1, proj, sample, cells, region,
              dplyr::select(yff.shm, proj, sample, cells, region, 
                            from, to, pos, context, contignt))
 
-save(df, file = "shm.Rda", compress = T)
+save(shm, file = "shm.Rda", compress = T)
 
