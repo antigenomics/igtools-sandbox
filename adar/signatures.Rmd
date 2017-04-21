@@ -107,12 +107,28 @@ ggplot(f2, aes(variable, name)) +
   geom_tile(aes(fill = value)) +
   geom_text(aes(label = round(value, 3)), cex=3) +
   scale_fill_gradient2(low = "#2F6B89", mid = "#67CB87", high = "#F4F27B", midpoint = 0.6, 
-                       na.value = "white") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+                       na.value = "white")
 ```
 
-```{r}
-for (i in unique(shm$name)){
-  set <- filter(shm, name == i, nchar(context) == 7)$context
+```{r, fig.height=2, fig.width=4}
+library(seqLogo)
+
+shm$type <- paste(shm$from, shm$to, sep='>')
+
+for (i in unique(shm$type)){
+  print(i)
+  set <- filter(shm, type == i, nchar(context) == 7, str_detect(context, 'N') == F) %>%
+    separate(context, c('n.1', 'n.2', 'n.3', 'n.4', 'n.5', 'n.6', 'n.7'), c(1,2,3,4,5,6)) %>%
+    dplyr::select(starts_with('n.'))
+  
+  prob <- data.frame()
+  
+  for (j in c('A','C','G','T')){
+    .prob <- apply(set, 2, function(x) length(x[x==j])/length(x))
+    prob <- rbind(prob, .prob)
+  }
+  rownames(prob) <- c('A','C','G','T')
+  colnames(prob) <- paste0('p', 1:7)
+  seqLogo(makePWM(prob), ic.scale=F,  xfontsize=10, yfontsize=10)
 }
 ```
