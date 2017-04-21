@@ -29,7 +29,7 @@ aging.shm.1 <- merge(aging.shm, dplyr::select(clones, clonotype.id, proj, sample
                      by=c('clonotype.id', 'proj', 'sample'))
 aging.shm.1$contignt <- as.character(aging.shm.1$contignt)
 aging.shm.1 <- mutate(aging.shm.1, len = nchar(contignt),
-                      context = str_sub(contignt, pmax(0,pos.nt-3), pmin(pos.nt+3, len)),
+                      context = str_sub(contignt, pmax(0,pos.nt-2), pmin(pos.nt+4, len)),
                       cells = 'P')
 
 
@@ -92,7 +92,7 @@ raji.shm <- read.table('data/raji_R12.txt', header=T, sep="\t") %>%
 
 raji.shm$contignt <- as.character(raji.shm$contignt)
 raji.shm <- mutate(raji.shm, len = nchar(contignt),
-                      context = str_sub(contignt, pmax(0,pos-3), pmin(pos+3, len)),
+                      context = str_sub(contignt, pmax(0,pos-2), pmin(pos+4, len)),
                    cells = 'P', proj = 'raji', sample ='raji')
 
 #YF+FLU DATASET
@@ -115,7 +115,7 @@ for (i in 1:nrow(samples)){
 
 yff.shm$contignt <- as.character(yff.shm$contignt)
 yff.shm <- mutate(yff.shm, len = nchar(contignt),
-                   context = str_sub(contignt, pmax(0,pos-3), pmin(pos+3, len)))
+                   context = str_sub(contignt, pmax(0,pos-2), pmin(pos+4, len)))
 
 # SAVE
 
