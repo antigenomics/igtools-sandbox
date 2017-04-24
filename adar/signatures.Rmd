@@ -1,17 +1,35 @@
 ---
 title: "Somatic hypermutations signatures"
-author: "Anna Obraztsova"
-date: "4/20/2017"
+author: "Anna Obraztsova, Mikhail Shugay"
+date: "4/24/2017"
 output: pdf_document
 ---
 
-```{r, fig.height=10}
+## Exploratory data analysis
+
+Load all our data, plot relative substitution frequencies. Here is some summary of what we currently have:
+
+* We have flu (``flu``) and yellow fewer (``YF``) vaccination time-courses which track plasma (``P``) and memory (``M``) B-cells. 
+* We also have ``old`` and ``young`` donors vaccinated against yellow fewer, ``P`` cells only and no controls unfortunately.
+* Raji cell line (``raji``) and data from Steele 2009 (``steele``) are included for reference.
+
+Note that we work with relative fractions of subsitutions which is computed as follows. Let the number of substitutions from base $B_i$ to base $B_j$ be $\#\left(B_i \rightarrow B_j\right)$, the absolute substitution frequncy is then $F_{ij} = \#\left(B_i \rightarrow B_j\right) / \#B_i$ where $\#B_i$ is the total number of occurences of base $B_i$ in a sample of sequences. The relative frequncy is given by normalizing all $F_{ij}$ to $\sum_{ij} F_{ij} = 1$ (to $100\%$), i.e. $f_{ij} = F_{ij} / \sum_{lk} F_{lk}$.
+
+Also note that here we ignore abundancies of individual B-cell clonotypes and count each of them only once when summing over substitutions. This is reasonable as it removes substitution frequnecy biases coming from preferential expansion of B-cell clonotypes with certain hypermutations.
+
+```{r echo = FALSE, include=FALSE, cache=FALSE}
+library(seqLogo)
 library(dplyr)
 library(ggplot2)
 library(reshape2)
 library(stringr)
 library(tidyr)
+library(scales)
+library(RColorBrewer)
+library(gplots)
+```
 
+```{r, fig.height=10, echo = FALSE}
 load('shm.Rda')
 shm$region <- factor(shm$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
 shm$clonotypes <- 1
@@ -52,16 +70,22 @@ st <- read.table('freq_steele.txt', header=T) %>%
 
 f <- rbind(f, st)
 
-ggplot(f, aes(x = from, y = to)) +
+f$from <- factor(f$from, levels = rev(c("A", "T", "C", "G")))
+f$to <- factor(f$to, levels = c("A", "T", "C", "G"))
+
+ggplot(f, aes(x = to, y = from)) +
   geom_tile(aes(fill = freq)) +
-  geom_text(aes(label = round(freq, 3)), cex=3) +
+  geom_text(aes(label = percent(freq)), cex=3) +
   facet_wrap(~name, ncol=3) +
-  scale_fill_gradient2(low = "#2F6B89", mid = "#67CB87", high = "#F4F27B", midpoint = 0.1, na.value = "white")
+  scale_fill_gradient2("Frequency", low = "#F4F27B", mid = "#67CB87", high = "#2F6B89", midpoint = 0.1, na.value = "white")
 ```
 
-Calculate Jensen-Shannon divergence
+We compute Jensen-Shannon divergences (``JSD``), a metric that is commonly used to compare frequency distributions. The smaller the divergence, the closer are substitution frequency distributions. Of note:
 
-```{r, fig.height=6}
+* Old donors appear to be outliers at this plot, but we cannot rule out batch effect in the absence of controls
+* Samples for ``flu`` are highly correlated. Unfortunately this also includes control. All theese samples come from the same donor.
+
+```{r, fig.width=6.5, fig.height=6, echo = FALSE}
 jsd <- function(v1, v2){
   m <- 0.5 * (v1 + v1)
   0.5 * (sum(v1 * log2(v1 / m)) + sum(v2 * log2(v2 / m)))
@@ -82,53 +106,158 @@ for (i in unique(f$name)){
   jsd.df <- rbind(jsd.df, .jsd.df)
 }
 
-ggplot(jsd.df, aes(x, name)) +
-  geom_tile(aes(fill = jsd*100)) +
-  geom_text(aes(label = round(jsd*100)), cex=3) +
-  scale_fill_gradient2(low = "#2F6B89", mid = "#67CB87", high = "#F4F27B", midpoint = 8, 
-                       na.value = "white") + 
-    theme(axis.text.x = element_text(angle = 45, hjust = 1),
-          axis.text.y = element_text(angle = 45, hjust = 1))
+jsd.df$jsd2 = round(100 * jsd.df$jsd, 1)
+
+ggplot(jsd.df %>% filter(!(x %in% c("raji_raji_P", "steele")) & !(name %in% c("raji_raji_P", "steele"))), 
+       aes(x, name)) +
+  geom_tile(aes(fill = jsd * 100)) +
+  geom_text(aes(label = jsd2), cex=3) +
+  xlab("") + ylab("") +
+  scale_fill_gradientn("JSD, x100", colors=colorRampPalette(brewer.pal(11, 'Spectral'))(32), limits=c(1e-2, 2.7)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(angle = 45, hjust = 1),
+        legend.position="bottom")
 ```
 
+Compare substitution frequency distributions of our samples with ``steele`` reference and ``raji`` cell line. Note that ``raji`` is an extreme outlier, this is quite obvious from the substitution frequency matrices given above. The data from ``steele`` is far more similar to our results, but still more than $2$ times farther in terms of ``JSD`` distance from each sample than the sample if from its most distant counterpart in our vaccinated donor set.
 
-```{r, fig.width=4}
-f2 <- f %>% dplyr::group_by(proj, sample, cells, name, from) %>%
-  dplyr::summarise(freq = sum(freq)) %>%
-  dcast(proj + sample + cells +name ~ from, value.var='freq')
-
-f2$A.AT.ratio = f2$A/(f2$A+f2[['T']])
-f2$G.GC.ratio = f2$G/(f2$G+f2$C)
-f2 <- f2 %>%
-  dplyr::select(name, A.AT.ratio, G.GC.ratio) %>%
-  melt(id.vars=c('name'))
-
-ggplot(f2, aes(variable, name)) +
-  geom_tile(aes(fill = value)) +
-  geom_text(aes(label = round(value, 3)), cex=3) +
-  scale_fill_gradient2(low = "#2F6B89", mid = "#67CB87", high = "#F4F27B", midpoint = 0.6, 
-                       na.value = "white")
+```{r, echo = FALSE}
+ggplot(jsd.df %>% filter((x %in% c("raji_raji_P", "steele"))), 
+       aes(x, name)) +
+  geom_tile(aes(fill = jsd * 100)) +
+  geom_text(aes(label = jsd2), cex=3) +
+  scale_x_discrete("", expand = c(0,0)) + ylab("") +
+  scale_fill_gradientn("JSD, x100", colors=colorRampPalette(brewer.pal(11, 'Spectral'))(32), limits=c(1e-2, 17.2))
 ```
 
-```{r, fig.height=2, fig.width=4}
-library(seqLogo)
+Once more ``raji`` and ``steele`` substitution frequencies side-by-side. The ``C>>G`` rule does not hold for ``raji`` sample.
 
-shm$type <- paste(shm$from, shm$to, sep='>')
+```{r, echo = FALSE}
+ggplot(f %>% filter(name %in% c("steele", "raji_raji_P")), aes(x = to, y = from)) +
+  geom_tile(aes(fill = freq)) +
+  geom_text(aes(label = percent(freq)), cex=3) +
+  facet_wrap(~name, ncol=3) +
+  scale_fill_gradient2("Frequency", low = "#F4F27B", mid = "#67CB87", high = "#2F6B89", midpoint = 0.1, na.value = "white")
+```
 
-for (i in unique(shm$type)){
-  print(i)
-  set <- filter(shm, type == i, nchar(context) == 7, str_detect(context, 'N') == F) %>%
-    separate(context, c('n.1', 'n.2', 'n.3', 'n.4', 'n.5', 'n.6', 'n.7'), c(1,2,3,4,5,6)) %>%
-    dplyr::select(starts_with('n.'))
-  
-  prob <- data.frame()
-  
-  for (j in c('A','C','G','T')){
-    .prob <- apply(set, 2, function(x) length(x[x==j])/length(x))
-    prob <- rbind(prob, .prob)
-  }
-  rownames(prob) <- c('A','C','G','T')
-  colnames(prob) <- paste0('p', 1:7)
-  seqLogo(makePWM(prob), ic.scale=F,  xfontsize=10, yfontsize=10)
-}
+## Clustering samples based on mutation profile
+
+```{r, fig.height=5, echo = FALSE, cache=FALSE}
+f.mat <- f %>% dplyr::mutate(type = paste(from, to, sep = ">")) %>%
+  dplyr::select(name, type, freq) %>%
+  dcast(name ~ type)
+
+rownames(f.mat) <- f.mat$name
+f.mat$name <- NULL
+
+heatmap.2(as.matrix(f.mat),
+          hclustfun = function(x) hclust(x, method = "ward.D2"),
+          trace = "none",
+          col=colorRampPalette(brewer.pal(9, 'YlGn'))(32))
+```
+
+## Distribution of substitutions by position in template
+
+```{r, fig.height=5, echo = FALSE}
+shm$type <- with(shm, paste(from, to, sep = ">")) 
+
+ggplot(shm %>% filter(!is.na(region)), aes(x=pos/nchar(contignt), color = type)) +
+  geom_density() + 
+  xlab("Relative position in the template") + ylab("Probability density") +
+  facet_grid(from~to)
+```
+
+## Mining for ADAR and AID signatures
+
+Let us first define a set of four variables corresponding to ADAR/AID signatures:
+
+The fraction of mutations originating from a given base type $i$ is $f_{i\cdot} = \sum_{j\in A,T,G,C} f_{ij}$
+
+- AID prevalence $AID_{p} = f_{C\cdot} + f_{G\cdot}$
+- AID strand bias $AID_{s} = f_{G\cdot} / \left(f_{C\cdot} + f_{G\cdot}\right)$
+- ADAR prevalence $ADAR_{p} = f_{A\cdot} + f_{T\cdot}$
+- ADAR strand bias $ADAR_{s} = f_{A\cdot} / \left(f_{A\cdot} + f_{T\cdot}\right)$
+
+The plot below shows the aforementioned values for each sample. Reference values for ``raji`` and ``steele`` are shown in ``red`` and ``blue`` respectively.
+
+```{r, echo = FALSE, cache=FALSE}
+f2 <- f %>% dplyr::group_by(proj, sample, cells, name) %>%
+  dplyr::summarise(AIDp = sum(freq[which(from %in% c("C", "G"))]),
+                   AIDs = sum(freq[which(from == "G")]) / AIDp,
+                   ADARp = sum(freq[which(from %in% c("A", "T"))]),
+                   ADARs = sum(freq[which(from == "A")]) / ADARp) %>%
+  melt()
+
+f2$metric = with(f2, ifelse(variable %in% c("AIDp", "ADARp"), "prevalence", "strand bias"))
+f2$enzyme = with(f2, ifelse(variable %in% c("AIDp", "AIDs"), "AID", "ADAR"))
+
+ggplot() +
+  geom_point(data = subset(f2, !(name %in% c("steele", "raji_raji_P"))), aes(x=name, y = value), stat = "identity") +
+  geom_hline(data = subset(f2, name == "raji_raji_P"), aes(yintercept = value), color = "red", linetype = "dashed") +
+  geom_hline(data = subset(f2, name == "steele"), aes(yintercept = value), color = "blue", linetype = "dashed") +
+  facet_grid(metric~enzyme, scales="free") +
+  ylab("") + xlab("") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r, fig.width=4, echo = FALSE}
+# f2 <- f %>% dplyr::group_by(proj, sample, cells, name) %>%
+#   dplyr::summarise(freq = sum(freq)) %>%
+#   dcast(proj + sample + cells +name ~ from, value.var='freq')
+# 
+# f2$AID_p = f2$A/(f2$A+f2$"T")
+# f2$G.GC.ratio = f2$G/(f2$G+f2$C)
+# f2 <- f2 %>%
+#   dplyr::select(name, A.AT.ratio, G.GC.ratio) %>%
+#   melt(id.vars=c('name'))
+# 
+# ggplot(f2, aes(variable, name)) +
+#   geom_tile(aes(fill = value)) +
+#   geom_text(aes(label = round(value, 3)), cex=3) +
+#   scale_fill_gradient2(low = "#2F6B89", mid = "#67CB87", high = "#F4F27B", midpoint = 0.6, 
+#                        na.value = "white")
+```
+
+```{r, fig.height=2, fig.width=4, echo = FALSE}
+# shm$type <- paste(shm$from, shm$to, sep='>')
+# 
+# for (i in unique(shm$type)){
+#   print(i)
+#   set <- filter(shm, type == i, nchar(context) == 7, str_detect(context, 'N') == F) %>%
+#     separate(context, c('n.1', 'n.2', 'n.3', 'n.4', 'n.5', 'n.6', 'n.7'), c(1,2,3,4,5,6)) %>%
+#     dplyr::select(starts_with('n.'))
+#   
+#   prob <- data.frame()
+#   
+#   for (j in c('A','C','G','T')){
+#     .prob <- apply(set, 2, function(x) length(x[x==j])/length(x))
+#     prob <- rbind(prob, .prob)
+#   }
+#   rownames(prob) <- c('A','C','G','T')
+#   colnames(prob) <- paste0('p', 1:7)
+#   seqLogo(makePWM(prob), ic.scale=F,  xfontsize=10, yfontsize=10)
+# }
+```
+
+```{r, fig.height=2, fig.width=4, echo = FALSE}
+# shm$type <- paste(shm$from, shm$to, sep='>')
+# 
+# for (i in unique(shm$from)){
+#   print(i)
+#   set <- filter(shm, from == i, nchar(context) == 7, str_detect(context, 'N') == F) %>%
+#     separate(context, c('n.1', 'n.2', 'n.3', 'n.4', 'n.5', 'n.6', 'n.7'), c(1,2,3,4,5,6)) %>%
+#     dplyr::select(starts_with('n.'))
+#   
+#   set$n.4 = i
+#   
+#   prob <- data.frame()
+#   
+#   for (j in c('A','C','G','T')){
+#     .prob <- apply(set, 2, function(x) length(x[x==j])/length(x))
+#     prob <- rbind(prob, .prob)
+#   }
+#   rownames(prob) <- c('A','C','G','T')
+#   colnames(prob) <- paste0('p', 1:7)
+#   seqLogo(makePWM(prob), ic.scale=F,  xfontsize=10, yfontsize=10)
+# }
 ```
