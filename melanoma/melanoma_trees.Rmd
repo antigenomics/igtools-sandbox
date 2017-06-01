@@ -1,0 +1,52 @@
+---
+title: "Melanoma BCR repertoire analysis"
+author: "Anna Obraztsova"
+date: '1 June 2017'
+output: pdf_document
+---
+
+```{r, fig.height=8, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(plyr)
+
+load('clones.rda')
+load('shm.rda')
+codes <- read.table('SKCM-codes-samples-for-patients-tss.txt', header=F, sep="\t")
+colnames(codes) <- c('patient_id', 'c1', 'c2', 'c3', 'tissue')
+clones <- merge(clones, codes)
+clones$tissue <- revalue(clones$tissue, c("Distant Metastasis" = "DistMet",
+                                          "Primary Tumor" = "PrTumor",
+                                          "Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)" = "Regional", "Regional Lymph Node" = "LNode"))
+clones$LN <- ifelse(clones$tissue == "LNode", 'LNode', 'Other')
+
+c <- clones %>% group_by(patient_id, tissue) %>%
+  dplyr::summarise(trees = n(), nodes = sum(nodes), mean.diameter = mean(diameter),
+                   max.tree = max(nodes)) %>%
+  dplyr::select(tissue, patient_id, trees, nodes, mean.diameter, max.tree) %>%
+  melt(id.vars = c('tissue', 'patient_id'))
+
+ggplot(c, aes(x = tissue, y = value)) + 
+  geom_boxplot() +
+  facet_wrap(~variable, scales="free_y") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+```{r, fig.height=6, fig.width=4}
+c1 <- clones %>% group_by(patient_id, LN) %>%
+  dplyr::summarise(trees = n(), nodes = sum(nodes), mean.diameter = mean(diameter),
+                   max.tree = max(nodes)) %>%
+  dplyr::select(LN, patient_id, trees, nodes, mean.diameter, max.tree)
+
+ggplot(melt(c1, id.vars = c('LN', 'patient_id')), aes(x = LN, y = value)) + 
+  geom_boxplot() +
+  facet_wrap(~variable, scales="free_y") +
+  theme_bw()
+
+for (i in c('trees', 'nodes', 'mean.diameter', 'max.tree')){
+  cat(i, 't-Test p-value\n', t.test(c1[[i]] ~ c1[['LN']])$p.value, '\n')
+}
+```
