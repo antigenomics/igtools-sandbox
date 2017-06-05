@@ -12,7 +12,6 @@ library(reshape2)
 library(plyr)
 
 load('clones.rda')
-load('shm.rda')
 codes <- read.table('SKCM-codes-samples-for-patients-tss.txt', header=F, sep="\t")
 colnames(codes) <- c('patient_id', 'c1', 'c2', 'c3', 'tissue')
 clones <- merge(clones, codes)
@@ -50,3 +49,28 @@ for (i in c('trees', 'nodes', 'mean.diameter', 'max.tree')){
   cat(i, 't-Test p-value\n', t.test(c1[[i]] ~ c1[['LN']])$p.value, '\n')
 }
 ```
+
+```{r, fig.height=4, fig.width=3, }
+library(tidyr)
+library(reshape2)
+
+load('shm.rda')
+
+s <- data.frame(mut.type = unlist(cdr3.shm$mut.type), position = unlist(cdr3.shm$position),
+                  cdr3.mut = unlist(cdr3.shm$cdr3.muts), aa.from = unlist(cdr3.shm$n1.aa),
+                  aa.to = unlist(cdr3.shm$n2.aa), 
+                patient_id = rep(cdr3.shm$patient_id, pmax(cdr3.shm$mut.num, 1))) %>%
+  filter(!is.na(aa.to)) %>%
+  merge(codes) %>%
+  mutate( LN = ifelse(tissue == "Regional Lymph Node", 'LNode', 'Other'))
+
+s1 <- s %>% group_by(patient_id, LN, mut.type) %>%
+  dplyr::summarise(n = n()) %>%
+  dcast(patient_id + LN ~ mut.type, value.var = "n") %>%
+  mutate(RS_ratio = R/S)
+
+ggplot(s1, aes(x = LN, y = RS_ratio)) + geom_boxplot()
+
+print(t.test(s1$RS_ratio ~ s1$LN)$p.value)
+```
+
