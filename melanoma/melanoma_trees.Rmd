@@ -1,7 +1,7 @@
 ---
 title: "Melanoma BCR repertoire analysis"
-author: "Anna Obraztsova"
-date: '1 June 2017'
+author: "Anna Obraztsova, Mikhail Shugay"
+date: '6 June 2017'
 output: pdf_document
 ---
 
@@ -14,41 +14,110 @@ library(plyr)
 load('clones.rda')
 codes <- read.table('SKCM-codes-samples-for-patients-tss.txt', header=F, sep="\t")
 colnames(codes) <- c('patient_id', 'c1', 'c2', 'c3', 'tissue')
-clones <- merge(clones, codes)
-clones$tissue <- revalue(clones$tissue, c("Distant Metastasis" = "DistMet",
-                                          "Primary Tumor" = "PrTumor",
-                                          "Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)" = "Regional", "Regional Lymph Node" = "LNode"))
-clones$LN <- ifelse(clones$tissue == "LNode", 'LNode', 'Other')
+codes$tissue <- revalue(codes$tissue, c("Distant Metastasis" = "D.M.",
+                                          "Primary Tumor" = "P.T.",
+                                          "Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)" = "R.T.", "Regional Lymph Node" = "L.N."))
+codes$tissue = as.factor(ifelse(as.character(codes$tissue) == "", NA, as.character(codes$tissue)))
 
-c <- clones %>% group_by(patient_id, tissue) %>%
-  dplyr::summarise(trees = n(), nodes = sum(nodes), mean.diameter = mean(diameter),
-                   max.tree = max(nodes)) %>%
-  dplyr::select(tissue, patient_id, trees, nodes, mean.diameter, max.tree) %>%
+meta.1 = read.table("full_metadata.txt", header = T, sep ="\t")
+
+meta = meta.1 %>%
+  dplyr::select(Code, Dead, OS.corrected, OS.uncorrected, IGH.clonality, IGH.clonality.all, IGH.coverage.by.MiXCR, Ratio.IGG1.to.IGH.by.MiXCR)
+
+colnames(meta) = c("patient_id", "Dead", "OS.corrected", "OS.uncorrected", "IGH.clonality", "IGH.clonality.all", "IGH.coverage.by.MiXCR", "Ratio.IGG1.to.IGH.by.MiXCR")
+
+meta = merge(codes, meta)
+
+clones = merge(clones, meta)
+```
+
+```{r}
+clones$low_cov = is.na(clones$IGH.clonality)
+cc = clones %>% 
+  group_by(patient_id, tissue, Dead, OS.corrected, OS.uncorrected,
+           IGH.clonality, IGH.clonality.all, IGH.coverage.by.MiXCR, Ratio.IGG1.to.IGH.by.MiXCR, low_cov) %>%
+  dplyr::summarise(trees = n(), max.tree.size = max(nodes),
+                   nodes = sum(nodes), 
+                   max.tree.diameter = max(diameter), 
+                   max.tree.leaves = max(leaves),
+                   max.tree.branching = max(ifelse(is.finite(branching), branching, 0)),
+                   max.mutations = max(total.mut)) %>%
+  ungroup
+```
+
+When filtering low-coverage samples, the difference is in overall number of trees and clonotypes, and tree diameter (in favour of LN of course)
+
+```{r}
+cc1 = cc %>% 
+  filter(!low_cov) %>% # filter all samples with low coverage - cannot estimate clonality, etc there
+  dplyr::select(tissue, patient_id, trees, nodes, 
+                max.tree.diameter, max.tree.size, 
+                max.tree.leaves, max.tree.branching, max.mutations) %>%
   melt(id.vars = c('tissue', 'patient_id'))
 
-ggplot(c, aes(x = tissue, y = value)) + 
-  geom_boxplot() +
-  facet_wrap(~variable, scales="free_y") +
-  theme_bw() +
+ggplot(cc1, aes(x = tissue, y = value)) + 
+  geom_boxplot() + coord_flip() +
+  facet_wrap(~variable, scales="free_x") +
+  theme_bw() + #scale_y_log10() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 
-
-```{r, fig.height=6, fig.width=4}
-c1 <- clones %>% group_by(patient_id, LN) %>%
-  dplyr::summarise(trees = n(), nodes = sum(nodes), mean.diameter = mean(diameter),
-                   max.tree = max(nodes)) %>%
-  dplyr::select(LN, patient_id, trees, nodes, mean.diameter, max.tree)
-
-ggplot(melt(c1, id.vars = c('LN', 'patient_id')), aes(x = LN, y = value)) + 
-  geom_boxplot() +
-  facet_wrap(~variable, scales="free_y") +
-  theme_bw()
-
-for (i in c('trees', 'nodes', 'mean.diameter', 'max.tree')){
-  cat(i, 't-Test p-value\n', t.test(c1[[i]] ~ c1[['LN']])$p.value, '\n')
+for (v in unique(cc1$variable)) {
+  print(v)
+  cc.sub = subset(cc1, variable == v)
+  a1 = aov(value~tissue,cc.sub)
+  print(summary(a1))
+  print(TukeyHSD(a1))
 }
 ```
+
+### Survival analysis
+
+```{r}
+library(party)
+library(survival)
+
+ctree_opts = ctree_control(testtype = "Univariate", minbucket = 45)#mincriterion = 0.9)
+
+make_tree = function(formula, df, ...) {
+  dfct = ctree(formula, data = df %>% filter(!is.na(OS.corrected)), controls = ctree_opts)
+  print(dfct)
+  plot(dfct, ...)
+}
+```
+
+Survival analysis using conventional MiXCR-derived metrics
+
+```{r}
+make_tree(Surv(OS.corrected, Dead) ~ tissue +
+            IGH.clonality + IGH.coverage.by.MiXCR + Ratio.IGG1.to.IGH.by.MiXCR, 
+            cc, "All tissues")
+```
+
+Survival analysis for different tissues including tree-based parameters
+
+```{r}
+make_tree(Surv(OS.corrected, Dead) ~ tissue +
+            IGH.clonality + IGH.coverage.by.MiXCR + Ratio.IGG1.to.IGH.by.MiXCR +
+            max.tree.diameter + max.tree.size +
+            max.tree.leaves + max.tree.branching + max.mutations, 
+            cc, "All tissues")
+
+make_tree(Surv(OS.corrected, Dead) ~ 
+            IGH.clonality + IGH.coverage.by.MiXCR + Ratio.IGG1.to.IGH.by.MiXCR +
+            max.tree.diameter + max.tree.size +
+            max.tree.leaves + max.tree.branching + max.mutations, 
+            cc %>% filter(tissue != "L.N."), "Non-lymph node")
+
+make_tree(Surv(OS.corrected, Dead) ~ 
+            IGH.clonality + IGH.coverage.by.MiXCR + Ratio.IGG1.to.IGH.by.MiXCR +
+            max.tree.diameter + max.tree.size +
+            max.tree.leaves + max.tree.branching + max.mutations, 
+            cc %>% filter(tissue == "L.N."), "Lymph node")
+```
+
+### R:S ratio
+
+> TODO: merge with trees, stop codon to stop codon mutations.. - where are they from, perhaps should filter all non-functional
 
 ```{r, fig.height=4, fig.width=3}
 library(tidyr)
@@ -61,6 +130,10 @@ s1 <- s %>% group_by(patient_id, LN, mut.type) %>%
   dcast(patient_id + LN ~ mut.type, value.var = "n") %>%
   mutate(RS_ratio = R/S)
 
+s1 = merge(s1, meta)
+```
+
+```{r}
 ggplot(s1, aes(x = LN, y = RS_ratio)) + geom_boxplot()
 
 print(t.test(s1$RS_ratio ~ s1$LN)$p.value)
