@@ -1,7 +1,7 @@
 import argparse
 import random
 import numpy as np
-
+import multiprocessing as mp
 
 class Clonotype:
 
@@ -11,36 +11,37 @@ class Clonotype:
         self.p = parent
         self.muts = mutations
 
-    def mutate(self, model, rep, new_rep):
 
-        mutations = []
-        new_seq = self.seq
-        indels = []
+def mutate(cl, model):
 
-        for i in range(len(self.seq)):
-            if random.random() > model['substitution.ratio']:
-                nucl = self.seq[i]
-                new_nucl = np.random.choice(model['substitution.pattern'][nucl][0],
-                                            p = model['substitution.pattern'][nucl][1])
-                new_seq = new_seq[:i] + new_nucl + new_seq[i + 1:]
-                mutations.append('S' + str(i) + ':' + self.seq[i] + '>' + new_nucl)
+    mutations = []
+    new_seq = cl.seq
+    indels = []
 
-            indel = np.random.choice(model['indel.pattern'][0], p = model['indel.pattern'][1])
-            if indel != 0:
-                indels.append([i, indel])
-                mutations.append(('D' if indel < 0 else 'I') + str(i) + ':' + str(indel).strip('-'))
+    for i in range(len(cl.seq)):
+        if random.random() < model['substitution.ratio']:
+            nucl = cl.seq[i]
+            new_nucl = np.random.choice(model['substitution.pattern'][nucl][0],
+                                        p = model['substitution.pattern'][nucl][1])
+            new_seq = new_seq[:i] + new_nucl + new_seq[i + 1:]
+            mutations.append('S' + str(i) + ':' + cl.seq[i] + '>' + new_nucl)
 
-        shift = 0
-        for i in indels:
-            if i[1] < 0:
-                new_seq = new_seq[:i[0] + shift] + new_seq[i[0] + i[1] + shift:]
-            else:
-                insertion = ''.join(map(str, np.random.choice(['A', 'C', 'G', 'T'], i[1])))
-                new_seq = new_seq[:i[0] + shift] + insertion + new_seq[i[0] + shift:]
-            shift += i[1]
+        indel = np.random.choice(model['indel.pattern'][0], p = model['indel.pattern'][1])
+        if indel != 0:
+            indels.append([i, indel])
+            mutations.append(('D' if indel < 0 else 'I') + str(i) + ':' + str(indel).strip('-'))
 
-        if mutations:
-            new_rep.append(Clonotype(new_seq, len(rep + new_rep) + 1, self.i, mutations))
+    shift = 0
+    for i in indels:
+        if i[1] < 0:
+            new_seq = new_seq[:i[0] + shift] + new_seq[i[0] + i[1] + shift:]
+        else:
+            insertion = ''.join(map(str, np.random.choice(['A', 'C', 'G', 'T'], i[1])))
+            new_seq = new_seq[:i[0] + shift] + insertion + new_seq[i[0] + shift:]
+        shift += i[1]
+
+    if mutations:
+        return Clonotype(new_seq, 0, cl.i, mutations)
 
 
 def parse_model():
@@ -89,10 +90,12 @@ for line in r.read().splitlines()[1:]:
     rep.append(Clonotype(seq, index, index, []))
 
 # go through repertoire several times and introduce mutations
-new_rep = []
-for i in range(args.tree_height):
-    for c in rep:
-        c.mutate(m, rep, new_rep)
+for s in range(args.tree_height):
+    pool = mp.Pool()
+    new_rep = [pool.apply(mutate, args=(cl, m)) for cl in rep]
+    new_rep = [cl for cl in new_rep if cl is not None]
+    for i, cl in enumerate(new_rep):
+        cl.i = len(rep) + 1 + i
     rep = rep + new_rep
 
 # write results
