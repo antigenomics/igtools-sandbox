@@ -19,12 +19,12 @@ def mutate(cl, model):
     indels = []
 
     for i in range(len(cl.seq)):
-        if random.random() < model['substitution.ratio']:
-            nucl = cl.seq[i]
-            new_nucl = np.random.choice(model['substitution.pattern'][nucl][0],
+        nucl = cl.seq[i]
+        new_nucl = np.random.choice(model['substitution.pattern'][nucl][0],
                                         p = model['substitution.pattern'][nucl][1])
+        if new_nucl != nucl:
             new_seq = new_seq[:i] + new_nucl + new_seq[i + 1:]
-            mutations.append('S' + str(i) + ':' + cl.seq[i] + '>' + new_nucl)
+            mutations.append('S' + str(i) + ':' + nucl + '>' + new_nucl)
 
         indel = np.random.choice(model['indel.pattern'][0], p = model['indel.pattern'][1])
         if indel != 0:
@@ -56,13 +56,16 @@ def parse_model():
 
     model['substitution.ratio'] = float(model['substitution.ratio'][0])
 
-    model['substitution.pattern'] = {['A', 'C', 'G', 'T'][i] :
-                                         [['A', 'C', 'G', 'T'][:i] + ['A', 'C', 'G', 'T'][i+1:],
-                                          model['substitution.pattern'][i].split()] for i in range(4)}
-    model['substitution.pattern']['N'] = [['A', 'C', 'G', 'T'], [0.25] * 4]
+    bases = ['A', 'C', 'G', 'T']
+    sp = {}
+    for i, n in enumerate(bases):
+        variant = [bases[i]] + bases[:i] + bases[i+1:]
+        probability = [1 - model['substitution.ratio']] + \
+                      [float(x) * model['substitution.ratio'] for x in model['substitution.pattern'][i].split()]
+        sp[n] = [variant, probability]
+    sp['N'] = [['N', 'A', 'C', 'G', 'T'], [1 - model['substitution.ratio']] + [model['substitution.ratio']/4] * 4]
 
-    for i in ['A', 'C', 'G', 'T']:
-        model['substitution.pattern'][i][1] = [float(x) for x in model['substitution.pattern'][i][1]]
+    model['substitution.pattern'] = sp
 
     model['indel.pattern'] = [x.split() for x in model['indel.pattern']]
     model['indel.pattern'][0] = [int(x) for x in model['indel.pattern'][0]]
