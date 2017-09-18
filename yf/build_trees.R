@@ -1,9 +1,9 @@
 #!/usr/bin/Rscript
 
-suppressPackageStartupMessages(library("optparse"))
+library("optparse")
 
 option_list <- list(
-  make_option(c("-a", "--alpha"), type="double", default=0.005, help="K-mer score threshold (logarithmic); default 0.005"),
+  make_option(c("-a", "--alpha"), type="double", default=-6, help="K-mer score threshold (logarithmic); default is -6"),
   make_option(c("-c", "--cytoscape"), type="logical", default=FALSE, help="Create files for Cytoscape"),
   make_option(c("-f", "--full"), type="logical", default=TRUE, help="Full-length BCR mode; if V and J segments available"),
   make_option(c("-i", "--input"), help="Path to input file"),
@@ -22,6 +22,7 @@ library(igraph)
 library(muscle)
 library(Biostrings)
 library(tidyr)
+library(purrr)
 
 find_kmers <- function(string, k=5){
   n <- nchar(string) - k + 1
@@ -119,9 +120,9 @@ pair_compare <- function(i, full, alpha){
   # find all clonotypes related to clonotype number i
   n1.lst <- c()
   n2.lst <- c()
-  kmer.score.lst <- c()
   mutations.num.lst <- c()
   cdr3.muts.lst <- list()
+  non.cdr3.muts.lst <- list()
   n1.aa.lst <- list()
   n2.aa.lst <- list()
   position.lst <- list()
@@ -130,77 +131,81 @@ pair_compare <- function(i, full, alpha){
   df <- filter(.df, v == .df$v[i], j == .df$j[i])
   
   for (j in df$clone[df$clone > i]){
-    #cat(i,' - ',j,'\n')
+    cat(i,' - ',j,'\n')
     shared.kmers = intersect(kmers[[i]], kmers[[j]])
     shared.kmer.inf = sum(unlist(lapply(shared.kmers, function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
     inf1 = sum(unlist(lapply(kmers[[i]], function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
     inf2 = sum(unlist(lapply(kmers[[j]], function(x) kmer.df$neg_ln[kmer.df$kmer == x])))
     m = shared.kmer.inf/(inf1*inf2)
-    #p.value = 1 - pgamma(shared.kmer.inf/(inf1*inf2), shape = gamma.params$estimate['shape'], rate = gamma.params$estimate['rate'])
+    print(log(m))
       
     if (log(m) > alpha){
-      if (full){ #full-length mode
+      
+      dp = get_mutations_and_parent( df[df$clone == i,]$cdr3nt, df[df$clone == j,]$cdr3nt )
+      cdr3.muts <- list(dp$mutations$mut.nt)
+      
+      if (full){
+        
         mut.i = df[df$clone == i,]$all.mutations
         mut.j = df[df$clone == j,]$all.mutations
         shared.muts = intersect(mut.i, mut.j)
-          
-        if (length(shared.muts) == length(mut.i) | length(shared.muts) == length(mut.j)){
+        
+        if (length(mut.i) != length(mut.j) & (length(shared.muts) == length(mut.i) | length(shared.muts) == length(mut.j))){
           n1 = ifelse(length(shared.muts) == length(mut.i),i, j)
           n2 = ifelse(n1 == i, j, i)
-          cdr3.muts <- list(get_mutations(df[df$clone == n1,]$cdr3nt, df[df$clone == n2,]$cdr3nt)$n2)
-          muts.between = list(setdiff(df[df$clone == n2,]$all.mutations, df[df$clone == n1,]$all.mutations))
-            
-          cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- cdr3.muts
-          non.cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- muts.between
-          n1.lst <- c(n1.lst, n1)
-          n2.lst <- c(n2.lst, n2)
-          kmer.score.lst <- c(kmer.score.lst, m)
-          mutations.num.lst <- c(mutations.num.lst, mutations.num = 
-                                   length(muts.between[[1]]) + length(cdr3.muts[[1]]))
+        } else {
+          n1 = ifelse(dp$parent == 'n1', i, j)
+          n2 = ifelse(dp$parent == 'n1', j, i)
         }
-      }
         
-      else {
-        dp = get_mutations_and_parent( df[df$clone == i,]$cdr3nt, df[df$clone == j,]$cdr3nt )
-          
+        non.cdr3.muts = setdiff(df[df$clone == n2,]$all.mutations, df[df$clone == n1,]$all.mutations)
+        if (length(non.cdr3.muts) == 0){
+          non.cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- NA
+        } else {
+          non.cdr3.muts.lst[[paste(n1,n2,sep='_')]] <- non.cdr3.muts
+        }
+        
+        mutations.num = length(non.cdr3.muts) + length(cdr3.muts[[1]])
+        
+      } else {
         n1 = ifelse(dp$parent == 'n1', i, j)
         n2 = ifelse(dp$parent == 'n1', j, i)
-        n1.lst <- c(n1.lst, n1)
-        n2.lst <- c(n2.lst, n2)
-        kmer.score.lst <- c(kmer.score.lst, m)
-        mutations.num.lst <- c(mutations.num.lst, mutations.num = length(dp$mutations$mut.nt))
-        name = paste(n1,n2,sep='_')
+        mutations.num = nrow(dp$mutations)
+      }
+      
+      n1.lst <- c(n1.lst, n1)
+      n2.lst <- c(n2.lst, n2)
+      mutations.num.lst <- c(mutations.num.lst, mutations.num)
+      name = paste(n1,n2,sep='_')
           
-        if (length(dp$mutations$mut.nt) == 0){
-          cdr3.muts.lst[[name]] <- NA
-          n1.aa.lst[[name]] <- NA
-          n2.aa.lst[[name]] <- NA
-          position.lst[[name]] <- NA
-          mut.type.lst[[name]] <- NA
-        } else {
-          cdr3.muts.lst[[name]] <- dp$mutations$mut.nt
-          n1.aa.lst[[name]] <- dp$mutations$n1.aa
-          n2.aa.lst[[name]] <- dp$mutations$n2.aa
-          position.lst[[name]] <- dp$mutations$ind
-          mut.type.lst[[name]] <- ifelse(dp$mutations$n1.aa == dp$mutations$n2.aa, 'S', 'R')
-        }
+      if (length(dp$mutations$mut.nt) == 0){
+        cdr3.muts.lst[[name]] <- c(NA)
+        n1.aa.lst[[name]] <- NA
+        n2.aa.lst[[name]] <- NA
+        position.lst[[name]] <- NA
+        mut.type.lst[[name]] <- NA
+      } else {
+        cdr3.muts.lst[[name]] <- c(dp$mutations$mut.nt)
+        n1.aa.lst[[name]] <- dp$mutations$n1.aa
+        n2.aa.lst[[name]] <- dp$mutations$n2.aa
+        position.lst[[name]] <- dp$mutations$ind
+        mut.type.lst[[name]] <- ifelse(dp$mutations$n1.aa == dp$mutations$n2.aa, 'S', 'R')
       }
     }
   }
   
   if (full){
-    data.frame(n1 = n1.lst, n2 = n2.lst, kmer.score = kmer.score.lst, 
+    data.frame(n1 = n1.lst, n2 = n2.lst,
                mut.num = mutations.num.lst, cdr3.muts = I(cdr3.muts.lst), 
                non.cdr3.muts = I(non.cdr3.muts.lst))
                #n1.aa = I(n1.aa.lst), 
                #n2.aa = I(n2.aa.lst), position = I(position.lst),
                #mut.type = I(mut.type.lst))
-  }
-  else{
-    data.frame(n1 = n1.lst, n2 = n2.lst, kmer.score = kmer.score.lst, 
-               mut.num = mutations.num.lst, cdr3.muts = I(cdr3.muts.lst), 
-               n1.aa = I(n1.aa.lst), n2.aa = I(n2.aa.lst), position = I(position.lst),
-               mut.type = I(mut.type.lst))
+  } else {
+    data.frame(n1 = n1.lst, n2 = n2.lst,
+               mut.num = mutations.num.lst, cdr3.muts = I(cdr3.muts.lst))
+               #n1.aa = I(n1.aa.lst), n2.aa = I(n2.aa.lst), position = I(position.lst),
+               #mut.type = I(mut.type.lst))
   }
 }
 
@@ -310,52 +315,44 @@ for (s in unique(df$sample)){
   pairs <- foreach(x = .df$clone, .combine='rbind', .packages = c('dplyr', 'stringr', 'Biostrings', 'muscle')) %dopar% pair_compare(x, full = opt$f, alpha = opt$a)
   final.pairs <- foreach(x = .df$clone, .combine='rbind', .packages = c('dplyr')) %dopar% get_arbor_edge(x)
   
-  # graph analysis
-  g <- graph( edges=as.character(interleave(final.pairs$n1, final.pairs$n2)) )
-  g <- set.edge.attribute(g, 'weight', value = final.pairs$mut.num)
-  components <- decompose.graph(g)
-  .clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% clone_info(x, full = opt$f)
-  .clones$single <- FALSE
-  .clones <- mutate(.clones, root = as.integer(root), cdr3aa = as.character(cdr3aa))
+  # graph analysis TREES WITH CYCLES
+  # g <- graph( edges=as.character(interleave(final.pairs$n1, final.pairs$n2)) )
+  # g <- set.edge.attribute(g, 'weight', value = final.pairs$mut.num)
+  # components <- decompose.graph(g)
+  # .clones <- foreach(x = components, .combine='rbind', .packages = c('igraph')) %dopar% clone_info(x, full = opt$f)
+  # .clones$single <- FALSE
+  # .clones <- mutate(.clones, root = as.integer(root), cdr3aa = as.character(cdr3aa))
+  # 
+  # if (opt$f){
+  #   singletons <- .df[-as.numeric(names(V(g))), ] %>% dplyr::select(root = clone, cdr3aa, freq, all.mutations) %>%
+  #     mutate(freq.sum = freq, leaves = 0, nodes = 1, diameter = 0,
+  #            mean.mut = 0, total.mut = 0, branching = 0, mean.degree = 0, single = TRUE)
+  #   singletons$root.mut <- sapply(singletons$all.mutations, length)
+  #   singletons <- dplyr::select(singletons, -all.mutations)
+  # } else{
+  #   singletons <- .df[-as.numeric(names(V(g))), ] %>% dplyr::select(root = clone, cdr3aa, freq) %>%
+  #     mutate(freq.sum = freq, leaves = 0, nodes = 1, diameter = 0,
+  #            mean.mut = 0, total.mut = 0, branching = 0, mean.degree = 0, single = TRUE)
+  #   singletons$root.mut <- 0
+  # }
+  # 
+  # .clones <- rbind(.clones, singletons)
+  # .clones$sample <- s
+  # clones <- rbind(clones, .clones)
   
-  if (opt$f){
-    singletons <- .df[-as.numeric(names(V(g))), ] %>% dplyr::select(root = clone, cdr3aa, freq, all.mutations) %>%
-      mutate(freq.sum = freq, leaves = 0, nodes = 1, diameter = 0,
-             mean.mut = 0, total.mut = 0, branching = 0, mean.degree = 0, single = TRUE)
-    singletons$root.mut <- sapply(singletons$all.mutations, length)
-    singletons <- dplyr::select(singletons, -all.mutations)
-  } else{
-    singletons <- .df[-as.numeric(names(V(g))), ] %>% dplyr::select(root = clone, cdr3aa, freq) %>%
-      mutate(freq.sum = freq, leaves = 0, nodes = 1, diameter = 0,
-             mean.mut = 0, total.mut = 0, branching = 0, mean.degree = 0, single = TRUE)
-    singletons$root.mut <- 0
-  }
+  #shm
+  .shm1 <- dplyr::select(final.pairs, n1, n2, muts = cdr3.muts) %>%
+    mutate(region = 'cdr3')
+  .shm2 <- dplyr::select(final.pairs, n1, n2, muts = non.cdr3.muts) %>%
+    mutate(region = 'non.cdr3')
+  .shm <- rbind(.shm1, .shm2)
+  .shm <- .shm %>% 
+    filter(!is.na(muts)) %>%
+    mutate_if(is.list, simplify_all) %>%
+    unnest() %>%
+    mutate(sample = s)
   
-  .clones <- rbind(.clones, singletons)
-  .clones$sample <- s
-  clones <- rbind(clones, .clones)
-  
-  #shm - not ready yet
-  if (opt$f){
-    .shm <- dplyr::select(final.pairs, n2, non.cdr3.muts, v, j)
-    .shm$muts <- sapply(.new.shm$non.cdr3.muts, unlist)
-  } else{
-    .shm <- data.frame()
-  }
-  .shm <- .shm %>% unnest(muts = muts) %>%
-    mutate(pos = str_extract(muts, '\\d+'), from=str_sub(str_extract(muts, '.>'),1,1),
-           to = str_sub(muts,-1,-1), sample = s) %>%
-    dplyr::select(-muts)
-  
-  .cdr3.shm <- final.pairs[sapply(final.pairs$cdr3.muts, function(x) length(x[[1]])) > 0,]
-  .cdr3.shm <- mutate(.cdr3.shm, sample=s, clonotype.id=n2, pos.nt=NA, segment.name=NA,
-         region='CDR3', mut.type = unlist(.cdr3.shm$mut.type), position = unlist(.cdr3.shm$position),
-             cdr3.mut = unlist(.cdr3.shm$cdr3.muts), from.aa = unlist(.cdr3.shm$n1.aa),
-             to.aa = unlist(.cdr3.shm$n2.aa)) %>%
-    filter(!is.na(to.aa))
-  
-  .shm$sample <- s
-  shm <- rbind(cdr3.shm, .cdr3.shm)
+  shm <- rbind(shm, .shm)
   
   if (opt$c){
     make_cytoscape_files()
