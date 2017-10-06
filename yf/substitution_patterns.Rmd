@@ -14,10 +14,10 @@ Load preprocessed data
 ```{r, warning=FALSE, message=FALSE}
 library(plyr)
 library(ggplot2)
-load("sp_new.Rda")
+load("sp_new_new.Rda")
 df <- subset(df, type == "RNA")
 df$region <- factor(df$region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3"))
-df$mutation.type <- ifelse(df$from.aa == df$to.aa, "S", "R")
+df$mutation.type <- ifelse(as.character(df$from.aa) == as.character(df$to.aa), "S", "R")
 df <- ddply(df, .(proj, type, sample, replica), transform, 
             weight = total.clonotypes / sum(total.clonotypes))
 ```
