@@ -1,0 +1,79 @@
+---
+title: "graph analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(stringr)
+library(reshape2)
+library(dplyr)
+library(ggbeeswarm)
+library(ineq)
+
+load('clones.rda')
+
+gs = mutate_each(clones, funs(as.double(.)), -root, -cdr3aa, -sample, -single) %>%
+  mutate(cdr3aa = as.character(cdr3aa), 
+         proj = ifelse(sample %in% c("Abdulain", "Ilgen", "Mamaev", "Smirnov", "Vlasov"), 'old', 'young'))
+```
+
+```{r}
+gs.s = gs %>% 
+  group_by(proj, sample) %>%
+  summarise(Gini = ineq(nodes, type='Gini'),
+            Trees = n(), Singletons = sum(single))
+
+gs.s2 = gs.s %>% melt 
+
+p11=ggplot(gs.s2, aes(x = proj, fill=proj, y = value)) +
+  geom_boxplot() +
+  facet_wrap(~variable, scales = "free") +
+  ylab("") + xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+p11
+
+dt.p = data.table()
+
+for (vv in unique(gs.s2$variable)) {
+  tt = t.test(value ~ proj, gs.s2 %>% filter(variable == vv))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(variable = vv, p=p))
+}
+
+dt.p$p.adj = p.adjust(dt.p$p, method = "BH")
+print(dt.p %>% arrange(p.adj))
+```
+
+```{r}
+p12=ggplot(gs %>% mutate(single = ifelse(single, "Singleton", "Tree")), aes(x = root.mut, color = proj)) +
+  stat_ecdf() +
+  facet_wrap(~single) +
+  scale_color_brewer("Age", palette = "Set1") +
+  scale_x_continuous("Number of root mutations", limits = c(0,70)) + ylab("CDF") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        legend.position = c(0.90, 0.2))
+p12
+
+ks.test(gs %>% filter(single == T, proj == "old") %>% .$root.mut,
+        gs %>% filter(single == T, proj != "old") %>% .$root.mut)
+
+ks.test(gs %>% filter(single == F, proj == "old") %>% .$root.mut,
+        gs %>% filter(single == F, proj != "old") %>% .$root.mut)
+```
+
+```{r}
+ggsave("figures/p11.pdf", p11, width=6,height=4)
+ggsave("figures/p12.pdf", p12, width=6,height=4)
+```

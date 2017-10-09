@@ -1,0 +1,187 @@
+---
+title: "istoype_ext_analysis.Rmd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(data.table)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(NMF)
+library(reshape2)
+library(parallel)
+library(RColorBrewer)
+library(scales)
+
+select = dplyr::select
+
+count_shms = function(x) {
+  x = str_split_fixed(x, pattern = ";", n = 2)[,1]
+  str_count(x, pattern = "S")
+}
+
+read_mixcr = function(sample, path) {
+  fread(paste0("zcat ", path, "/", sample, ".txt.gz")) %>%
+    filter(nchar(`AA. Seq. CDR1`) > 0, nchar(`AA. Seq. CDR2`) > 0, nchar(`AA. Seq. CDR3`) >= 5,
+           !grepl("[*_]", paste(`AA. Seq. CDR1`, `AA. Seq. CDR2`, `AA. Seq. CDR3`, `AA. Seq. FR1`, `AA. Seq. FR2`, `AA. Seq. FR3`))) %>%
+    mutate(isotype = str_split_fixed(`All C hits`, fixed("*"), 2)[,1],
+           shms = count_shms(`All V alignments`) + 
+             count_shms(`All D alignments`) + 
+             count_shms(`All J alignments`) + 
+             count_shms(`All C alignments`),
+           freq = `Clone fraction`) %>%
+    select(freq, isotype, shms) %>% 
+    mutate(sample_name = sample)
+}
+
+dt.meta = fread("metadata.txt") %>%
+  filter(vaccination != "none")
+
+dt.clones = list()
+
+for (i in 1:nrow(dt.meta)) {
+  dt.clones = with(dt.meta, 
+                   c(dt.clones, 
+                     list(
+                       read_mixcr(sample_name[i], path[i])
+                       )
+                     )
+                   )
+}
+
+dt.clones = rbindlist(dt.clones) %>%
+  merge(dt.meta)
+```
+
+```{r}
+dt.iso.count = dt.clones %>%
+  group_by(isotype) %>%
+  summarise(total = n())
+
+print(dt.iso.count)
+good_iso = (dt.iso.count %>% 
+  filter(total > 100))$isotype
+
+dt.clones = dt.clones %>%
+  filter(isotype %in% good_iso)
+```
+
+```{r}
+dt.p = data.table()
+
+for (iso in unique(dt.clones$isotype)) {
+  tmp = dt.clones %>% filter(isotype == iso)
+  x = (tmp %>% filter(age == "old"))$shms
+  y = (tmp %>% filter(age != "old"))$shms
+  kk = ks.test(x, y)
+  p = kk$p.value
+  dt.p = rbind(dt.p,
+               data.table(isotype = iso, p=p))
+}
+
+dt.p$p.adj = p.adjust(dt.p$p, method = "BH")
+print(dt.p %>% arrange(p.adj))
+
+ggplot(dt.clones, aes(x = shms, fill = age)) +
+  geom_density(alpha = 0.9, color = NA) +
+  facet_wrap(~isotype) +
+  scale_fill_brewer("Age", palette = "Set1") +
+  xlab("SHMs per clonotype") + ylab("") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        strip.background = element_blank())
+```
+
+```{r}
+load("sp_new_new.Rda")
+
+df = df %>%
+  group_by(clonotype.id, sample, proj, isotype, 
+           replacement = ifelse(as.character(from.aa) != as.character(to.aa), "replacement", "silent")) %>%
+  summarise(count = n())
+
+df.s = df %>% 
+  group_by(proj, isotype) %>%
+  summarise(count = n())
+
+print(df.s)
+
+df = df %>% filter(isotype != "IGHD")
+```
+
+```{r}
+df.1 = df %>% 
+  group_by(sample, proj, replacement, isotype) %>%
+  summarise(shms = mean(count))
+
+p10=ggplot(df.1, aes(x=proj, fill = proj, y = shms)) +
+  geom_boxplot() +
+  facet_grid(replacement~isotype, scales = "free") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  xlab("") + ylab("Mean # SHMs per clonotype") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+p10
+
+ggsave("figures/p10.pdf", p10)
+
+a = aov(shms ~ replacement + isotype + proj, df.1)
+summary(a)
+
+TukeyHSD(a, "proj")
+TukeyHSD(a, "isotype")
+```
+
+```{r}
+df.2 = df %>% 
+  group_by(sample, proj, isotype) %>%
+  summarise(rs = sum(count[which(replacement == "replacement")]) / sum(count[which(replacement != "replacement")]))
+
+ggplot(df.2, aes(x=proj, color = proj, y = rs)) +
+  geom_boxplot() +
+  facet_grid(.~isotype, scales = "free")
+
+a = aov(rs ~ isotype + proj, df.2)
+summary(a)
+
+TukeyHSD(a, "proj")
+```
+
+
+```{r}
+ggplot(df, aes(x=count, color = proj)) +
+  stat_ecdf() +
+  facet_grid(replacement~isotype) + #, scales = "free") +
+  #scale_fill_brewer("Age", palette = "Set1") +
+  xlab("SHMs per clonotype") + ylab("") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        strip.background = element_blank())
+```
+
+```{r}
+dt.p = data.table()
+
+for (iso in unique(df$isotype)) {
+for (rr in unique(df$replacement)) {
+  tmp = df %>% filter(isotype == iso, replacement == rr)
+  x = (tmp %>% filter(proj == "old"))$count
+  y = (tmp %>% filter(proj != "old"))$count
+  kk = ks.test(x, y)
+  p = kk$p.value
+  dt.p = rbind(dt.p,
+               data.table(isotype = iso, replacement = rr, p=p))
+}
+}
+
+dt.p$p.adj = p.adjust(dt.p$p, method = "BH")
+print(dt.p %>% arrange(p.adj))
+```
+

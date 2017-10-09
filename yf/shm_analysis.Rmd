@@ -1,0 +1,318 @@
+---
+title: "shm_analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Analysis of substitution type and frequency
+
+Load preprocessed data
+
+```{r, warning=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(data.table)
+library(scales)
+
+load("sp_new_new.Rda")
+df = data.table(df) %>%
+  mutate(region = as.character(region)) %>%
+  filter(type == "RNA") %>%
+  mutate(region = factor(region, c("FR1","CDR1","FR2","CDR2","FR3","CDR3","FR4"))) %>%
+  mutate(mutation.type = ifelse(as.character(from.aa) == as.character(to.aa), "S", "R")) %>%
+  group_by(proj, type, sample, replica) %>%
+  mutate(weight2 = 1/n())
+```
+
+Check if we observe well-documented increase in replacement:synonimic hypermutation ratio in CDR regions:
+
+```{r}
+p5=ggplot(df %>% mutate(weight2 = weight2/sum(weight2))) + 
+  geom_histogram(binwidth = 1, aes(x=pos.aa, weight=weight2, fill=region)) +
+  #geom_density(adjust=2, aes(x=pos.aa, weight=weight, fill=region), position = "stack", color = NA) +
+  geom_density(binwidth = 1, aes(x=pos.aa, weight=weight2, linetype = mutation.type)) +
+  scale_y_continuous("Hypermutation density", expand = c(0,0)) +
+  scale_x_continuous("Position in IG, AA", expand = c(0,0)) +
+  scale_linetype("SHM type") +
+  scale_fill_brewer("Region", palette = "Paired") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        legend.position = c(0.75, 0.81),
+        legend.direction = "horizontal")
+p5
+```
+
+Relative hypermutation burden by region for old and young
+
+```{r}
+df.shm.share = df %>%
+  group_by(proj, sample, region) %>%
+  summarise(count = n()) %>%
+  group_by(sample) %>%
+  mutate(share = count/sum(count))
+```
+
+```{r}
+df.shm.1 = df %>%
+  group_by(proj, sample, region, clonotype.id) %>%
+  summarise(shms = n())
+
+ggplot(df.shm.1, aes(x = shms, group = proj, color = proj)) +
+  stat_ecdf() +
+  scale_y_continuous("") +
+  xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  facet_wrap(~region, scales = "free", ncol=4) +
+  theme_bw() +  
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.90, 0.25),
+        strip.background = element_blank())
+
+dt.p = data.table()
+for (r in unique(df.shm.share$region)) {
+  tt = t.test(share~proj, df.shm.share %>% filter(region == r))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(region = r, p.adj = p))
+}
+dt.p$p.adj = p.adjust(dt.p$p.adj, method="BH")
+print(dt.p)
+```
+
+```{r}
+ggplot(df.shm.share, aes(x = proj, group = proj, y = share, fill = proj)) +
+  geom_boxplot(width = 0.5) +
+  scale_y_continuous("Share of SHMs", label = percent) +
+  xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  facet_wrap(~region, scales = "free", ncol=4) +
+  theme_bw() +  
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.90, 0.25),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+
+dt.p = data.table()
+for (r in unique(df.shm.share$region)) {
+  tt = t.test(share~proj, df.shm.share %>% filter(region == r))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(region = r, p.adj = p))
+}
+dt.p$p.adj = p.adjust(dt.p$p.adj, method="BH")
+print(dt.p)
+```
+
+Replacement to silent ratio
+
+```{r}
+df.shm.rs = df %>%
+  group_by(proj, sample, region, mutation.type) %>%
+  summarise(count = n()) %>%
+  group_by(proj, sample, region) %>%
+  summarise(rs = sum(c(0,count[which(mutation.type == "R")])) / sum(c(0,count[which(mutation.type == "S")])))
+```
+
+```{r}
+ggplot(df.shm.rs, aes(x = proj, group = proj, y = rs, fill = proj)) +
+  geom_boxplot(width = 0.5) +
+  scale_y_continuous("R:S ratio") +
+  xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  facet_wrap(~region, scales = "free", ncol=4) +
+  theme_bw() +  
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.90, 0.25),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+
+dt.p = data.table()
+for (r in unique(df.shm.rs$region)) {
+  tt = t.test(rs~proj, df.shm.rs %>% filter(region == r))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(region = r, p=p,p.adj = p))
+}
+dt.p$p.adj = p.adjust(dt.p$p.adj, method="BH")
+print(dt.p)
+```
+
+Overall statistics
+
+```{r}
+df.shm.share.s = df %>%
+  group_by(proj, sample, stat="# SHMs") %>%
+  summarise(value = n())
+
+df.shm.rs.s = df %>%
+  group_by(proj, sample, mutation.type) %>%
+  summarise(count = n()) %>%
+  group_by(proj, sample, stat="R:S ratio") %>%
+  summarise(value = sum(c(0,count[which(mutation.type == "R")])) / sum(c(0,count[which(mutation.type == "S")])))
+
+tmp = rbind(df.shm.share.s,
+             df.shm.rs.s)
+
+p6=ggplot(tmp,
+       aes(x = proj, y = value, fill = proj))+
+geom_boxplot(width = 0.5) +
+  scale_y_continuous("") +
+  xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") +
+  facet_wrap(~stat, scales = "free") +
+  theme_bw() +  
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+p6
+
+dt.p = data.table()
+for (ss in unique(tmp$stat)) {
+  tt = t.test(value ~ proj, tmp %>% filter(stat == ss))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(stat = ss, p=p))
+}
+print(dt.p)
+```
+Substitution patterns
+
+```{r}
+df.sign = df %>%
+  mutate(mutation.signature = paste(from.nt, to.nt, sep = ">"))
+```
+
+R:S ratio across different substitution patterns at nucleotide level
+
+```{r}
+df.sign.rs = df.sign %>%
+  group_by(mutation.signature, mutation.type) %>%
+  summarise(count = n()) %>%
+  group_by(mutation.signature) %>%
+  summarise(rs = count[which(mutation.type == "R")] / count[which(mutation.type == "S")])
+
+p7=ggplot(df.sign.rs, aes(x = mutation.signature, y = rs, fill = mutation.signature)) +
+  geom_bar(stat="identity", color="black") + 
+  geom_hline(yintercept = 1, linetype="dashed") + 
+  scale_fill_brewer("Signature", palette = "Paired") + 
+  scale_y_continuous("R:S ratio", breaks=0:8) +
+  xlab("") + 
+  theme_bw() +  
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank())
+p7
+```
+
+Share of different substitution patterns compared between young and old. Age-related difference observed for certain substitution patterns aross hypermutations.
+
+```{r}
+sign.dict = data.frame(mutation.signature = c("A>C","A>G","A>T","C>A","C>G","C>T","G>A",
+                                              "G>C","G>T","T>A","T>C","T>G"),
+                       mutation.signature.rep = c("A>C,T>G","A>G,T>C","A>T,T>A","C>A,G>T",
+                                                  "C>G,G>C","C>T,G>A","C>T,G>A","C>G,G>C",
+                                                  "C>A,G>T","A>T,T>A","A>G,T>C","A>C,T>G"))
+
+df.sign.s = df.sign %>%
+  group_by(proj, sample, mutation.signature) %>%
+  summarise(count = n()) %>%
+  group_by(sample) %>%
+  mutate(freq = count / sum(count))
+```
+
+```{r}
+df.sign.s$mutation.signature = factor(df.sign.s$mutation.signature,
+                                      levels = with(df.sign.s %>% group_by(mutation.signature) %>% 
+                                                      summarise(freq = sum(freq)), 
+                                                    mutation.signature[order(-freq)]))
+
+p8=ggplot(df.sign.s, aes(x=mutation.signature, y = freq, fill = proj)) +
+  geom_boxplot() + 
+  ylab("") + xlab("") +
+  scale_fill_brewer("Age", palette = "Set1") + 
+  ylab("Share of hypermutations") +
+  theme_bw() +  
+  theme(panel.grid.major.y = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.position = c(0.8, 0.8))
+p8
+
+a = aov(freq ~ proj * mutation.signature, df.sign.s)
+summary(a)
+
+dt.p = data.table()
+
+for (ms in unique(df.sign.s$mutation.signature)) {
+  tt = t.test(freq ~ proj, df.sign.s %>% filter(mutation.signature == ms))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(mutation.signature = ms, p=p))
+}
+
+dt.p$p.adj = p.adjust(dt.p$p, method = "BH")
+print(dt.p %>% arrange(p.adj))
+```
+
+```{r}
+aa.classes = data.table(aa = strsplit("I,V,L,F,C,M,A,W,G,T,S,Y,P,H,N,D,Q,E,K,R", ",")[[1]],
+                         hydrop = c(rep("hydrophobic", 8), rep("neutral", 6), 
+                                    rep("hydrophilic", 6)))
+
+df.aachange = df %>%
+  merge(aa.classes %>% mutate(from.aa = aa, from.value = hydrop) %>% select(from.aa, from.value)) %>%
+  merge(aa.classes %>% mutate(to.aa = aa, to.value = hydrop) %>% select(to.aa, to.value))
+```
+
+```{r}
+hydrop_toint = function(x) {
+  ifelse(x == "hydrophobic", 1, ifelse(x == "neutral", 0, -1))
+}
+
+dt.aachange.s = df.aachange %>%
+  group_by(sample, proj, from.value, to.value) %>%
+  summarise(count = n()) %>%
+  group_by(sample, proj) %>%
+  mutate(freq = count / sum(count),
+         hydrop.change = hydrop_toint(to.value) - hydrop_toint(from.value)) %>%
+  group_by(hydrop.change) %>%
+  mutate(freq2 = freq / length(unique(paste(from.value, to.value))))
+
+p9=ggplot(dt.aachange.s, aes(x=hydrop.change, group=paste(hydrop.change, proj), fill = proj, y= freq2)) +
+  geom_boxplot() +
+  scale_fill_brewer("Age", palette = "Set1") + 
+  ylab("Share of hypermutations") +
+  xlab("Hydropathy change (hydrophobic>hydrophilic) .. (hydrophilic>hydrophobic)") +
+  theme_bw() +
+  theme(aspect=1,
+        legend.position = c(0.85,0.85),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank())
+p9
+
+dt.p = data.table()
+
+for (hc in unique(dt.aachange.s$hydrop.change)) {
+  tt = t.test(freq ~ proj, dt.aachange.s %>% filter(hydrop.change == hc))
+  p = tt$p.value
+  dt.p = rbind(dt.p,
+               data.table(hydrop.change = hc, p=p))
+}
+
+dt.p$p.adj = p.adjust(dt.p$p, method = "BH")
+print(dt.p %>% arrange(p.adj))
+```
+
+```{r}
+ggsave("figures/p5.pdf", p5, width = 10, height = 5)
+ggsave("figures/p6.pdf", p6, width = 5, height = 5)
+ggsave("figures/p7.pdf", p7, width = 5, height = 5)
+ggsave("figures/p8.pdf", p8, width = 8, height = 5)
+ggsave("figures/p9.pdf", p9, width = 7, height = 5)
+```

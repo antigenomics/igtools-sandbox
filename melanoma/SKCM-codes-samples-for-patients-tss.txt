@@ -1,0 +1,468 @@
+SKCM001	TCGA-3N-A9WB	TCGA-3N-A9WB-06A		Distant Metastasis
+SKCM002	TCGA-3N-A9WC	TCGA-3N-A9WC-06A		Regional Lymph Node
+SKCM003	TCGA-3N-A9WD	TCGA-3N-A9WD-06A		Regional Lymph Node
+SKCM004	TCGA-BF-A1PU	TCGA-BF-A1PU-01A		Primary Tumor
+SKCM005	TCGA-BF-A1PV	TCGA-BF-A1PV-01A		Primary Tumor
+SKCM006	TCGA-BF-A1PX	TCGA-BF-A1PX-01A		Primary Tumor
+SKCM007	TCGA-BF-A1PZ	TCGA-BF-A1PZ-01A		Primary Tumor
+SKCM008	TCGA-BF-A1Q0	TCGA-BF-A1Q0-01A		Primary Tumor
+SKCM009	TCGA-BF-A3DJ	TCGA-BF-A3DJ-01A		Primary Tumor
+SKCM010	TCGA-BF-A3DL	TCGA-BF-A3DL-01A		Primary Tumor
+SKCM011	TCGA-BF-A3DM	TCGA-BF-A3DM-01A		Primary Tumor
+SKCM012	TCGA-BF-A3DN	TCGA-BF-A3DN-01A		Primary Tumor
+SKCM013	TCGA-BF-A5EO	TCGA-BF-A5EO-01A		Primary Tumor
+SKCM014	TCGA-BF-A5EP	TCGA-BF-A5EP-01A		Primary Tumor
+SKCM015	TCGA-BF-A5EQ	TCGA-BF-A5EQ-01A		Primary Tumor
+SKCM016	TCGA-BF-A5ER	TCGA-BF-A5ER-01A		Primary Tumor
+SKCM017	TCGA-BF-A5ES	TCGA-BF-A5ES-01A		Primary Tumor
+SKCM018	TCGA-BF-A9VF	TCGA-BF-A9VF-01A		Primary Tumor
+SKCM019	TCGA-BF-AAOU	TCGA-BF-AAOU-01A		Primary Tumor
+SKCM020	TCGA-BF-AAOX	TCGA-BF-AAOX-01A		Primary Tumor
+SKCM021	TCGA-BF-AAP0	TCGA-BF-AAP0-06A		Regional Lymph Node
+SKCM022	TCGA-BF-AAP1	TCGA-BF-AAP1-01A		Primary Tumor
+SKCM023	TCGA-BF-AAP2	TCGA-BF-AAP2-01A		Primary Tumor
+SKCM024	TCGA-BF-AAP4	TCGA-BF-AAP4-01A		Primary Tumor
+SKCM025	TCGA-BF-AAP6	TCGA-BF-AAP6-01A		Primary Tumor
+SKCM026	TCGA-BF-AAP7	TCGA-BF-AAP7-01A		Primary Tumor
+SKCM027	TCGA-BF-AAP8	TCGA-BF-AAP8-01A		Primary Tumor
+SKCM028	TCGA-D3-A1Q1	TCGA-D3-A1Q1-06A		Regional Lymph Node
+SKCM029	TCGA-D3-A1Q3	TCGA-D3-A1Q3-06A		Regional Lymph Node
+SKCM030	TCGA-D3-A1Q4	TCGA-D3-A1Q4-06A		Regional Lymph Node
+SKCM031	TCGA-D3-A1Q5	TCGA-D3-A1Q5-06A		Regional Lymph Node
+SKCM032	TCGA-D3-A1Q6	TCGA-D3-A1Q6-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM033	TCGA-D3-A1Q7	TCGA-D3-A1Q7-06A		Regional Lymph Node
+SKCM034	TCGA-D3-A1Q8	TCGA-D3-A1Q8-06A		Regional Lymph Node
+SKCM035	TCGA-D3-A1Q9	TCGA-D3-A1Q9-06A		Regional Lymph Node
+SKCM036	TCGA-D3-A1QA	TCGA-D3-A1QA-06A		Regional Lymph Node
+SKCM037	TCGA-D3-A1QB	TCGA-D3-A1QB-06A		Regional Lymph Node
+SKCM038	TCGA-D3-A2J6	TCGA-D3-A2J6-06A		Regional Lymph Node
+SKCM039	TCGA-D3-A2J7	TCGA-D3-A2J7-06A		Regional Lymph Node
+SKCM040	TCGA-D3-A2J8	TCGA-D3-A2J8-06A		Regional Lymph Node
+SKCM041	TCGA-D3-A2J9	TCGA-D3-A2J9-06A		Regional Lymph Node
+SKCM042	TCGA-D3-A2JA	TCGA-D3-A2JA-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM043	TCGA-D3-A2JB	TCGA-D3-A2JB-06A		Regional Lymph Node
+SKCM044	TCGA-D3-A2JC	TCGA-D3-A2JC-06A		Regional Lymph Node
+SKCM045	TCGA-D3-A2JD	TCGA-D3-A2JD-06A		Regional Lymph Node
+SKCM046	TCGA-D3-A2JE	TCGA-D3-A2JE-06A		Regional Lymph Node
+SKCM047	TCGA-D3-A2JF	TCGA-D3-A2JF-06A		Distant Metastasis
+SKCM048	TCGA-D3-A2JG	TCGA-D3-A2JG-06A		Regional Lymph Node
+SKCM049	TCGA-D3-A2JH	TCGA-D3-A2JH-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM050	TCGA-D3-A2JK	TCGA-D3-A2JK-06A		Regional Lymph Node
+SKCM051	TCGA-D3-A2JL	TCGA-D3-A2JL-06A		Regional Lymph Node
+SKCM052	TCGA-D3-A2JN	TCGA-D3-A2JN-06A		Regional Lymph Node
+SKCM053	TCGA-D3-A2JO	TCGA-D3-A2JO-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM054	TCGA-D3-A2JP	TCGA-D3-A2JP-06A		Regional Lymph Node
+SKCM055	TCGA-D3-A3BZ	TCGA-D3-A3BZ-06A		Regional Lymph Node
+SKCM056	TCGA-D3-A3C1	TCGA-D3-A3C1-06A		Regional Lymph Node
+SKCM057	TCGA-D3-A3C3	TCGA-D3-A3C3-06A		Regional Lymph Node
+SKCM058	TCGA-D3-A3C6	TCGA-D3-A3C6-06A		Regional Lymph Node
+SKCM059	TCGA-D3-A3C7	TCGA-D3-A3C7-06A		Regional Lymph Node
+SKCM060	TCGA-D3-A3C8	TCGA-D3-A3C8-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM061	TCGA-D3-A3CB	TCGA-D3-A3CB-06A		Regional Lymph Node
+SKCM062	TCGA-D3-A3CC	TCGA-D3-A3CC-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM063	TCGA-D3-A3CE	TCGA-D3-A3CE-06A		Regional Lymph Node
+SKCM064	TCGA-D3-A3CF	TCGA-D3-A3CF-06A		Regional Lymph Node
+SKCM065	TCGA-D3-A3ML	TCGA-D3-A3ML-06A		Regional Lymph Node
+SKCM066	TCGA-D3-A3MO	TCGA-D3-A3MO-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM067	TCGA-D3-A3MR	TCGA-D3-A3MR-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM068	TCGA-D3-A3MU	TCGA-D3-A3MU-06A		Regional Lymph Node
+SKCM069	TCGA-D3-A3MV	TCGA-D3-A3MV-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM070	TCGA-D3-A51E	TCGA-D3-A51E-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM071	TCGA-D3-A51F	TCGA-D3-A51F-06A		Regional Lymph Node
+SKCM072	TCGA-D3-A51G	TCGA-D3-A51G-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM073	TCGA-D3-A51H	TCGA-D3-A51H-06A		Regional Lymph Node
+SKCM074	TCGA-D3-A51J	TCGA-D3-A51J-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM075	TCGA-D3-A51K	TCGA-D3-A51K-06A		Regional Lymph Node
+SKCM076	TCGA-D3-A51N	TCGA-D3-A51N-06A		Regional Lymph Node
+SKCM077	TCGA-D3-A51R	TCGA-D3-A51R-06A		Regional Lymph Node
+SKCM078	TCGA-D3-A51T	TCGA-D3-A51T-06A		Regional Lymph Node
+SKCM079	TCGA-D3-A5GL	TCGA-D3-A5GL-06A		Regional Lymph Node
+SKCM080	TCGA-D3-A5GN	TCGA-D3-A5GN-06A		Regional Lymph Node
+SKCM081	TCGA-D3-A5GO	TCGA-D3-A5GO-06A		Distant Metastasis
+SKCM082	TCGA-D3-A5GR	TCGA-D3-A5GR-06A		Regional Lymph Node
+SKCM083	TCGA-D3-A5GS	TCGA-D3-A5GS-06A		Regional Lymph Node
+SKCM084	TCGA-D3-A5GT	TCGA-D3-A5GT-01A		Primary Tumor
+SKCM085	TCGA-D3-A5GU	TCGA-D3-A5GU-06A		Regional Lymph Node
+SKCM086	TCGA-D3-A8GB	TCGA-D3-A8GB-06A		Regional Lymph Node
+SKCM087	TCGA-D3-A8GC	TCGA-D3-A8GC-06A		Regional Lymph Node
+SKCM088	TCGA-D3-A8GD	TCGA-D3-A8GD-06A		Regional Lymph Node
+SKCM089	TCGA-D3-A8GE	TCGA-D3-A8GE-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM090	TCGA-D3-A8GI	TCGA-D3-A8GI-06A		Regional Lymph Node
+SKCM091	TCGA-D3-A8GJ	TCGA-D3-A8GJ-06A		Distant Metastasis
+SKCM092	TCGA-D3-A8GK	TCGA-D3-A8GK-06A		Distant Metastasis
+SKCM093	TCGA-D3-A8GL	TCGA-D3-A8GL-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM094	TCGA-D3-A8GM	TCGA-D3-A8GM-06A		Regional Lymph Node
+SKCM095	TCGA-D3-A8GN	TCGA-D3-A8GN-06A		Distant Metastasis
+SKCM096	TCGA-D3-A8GO	TCGA-D3-A8GO-06A		Regional Lymph Node
+SKCM097	TCGA-D3-A8GP	TCGA-D3-A8GP-06A		Distant Metastasis
+SKCM098	TCGA-D3-A8GQ	TCGA-D3-A8GQ-06A		Distant Metastasis
+SKCM099	TCGA-D3-A8GR	TCGA-D3-A8GR-06A		Distant Metastasis
+SKCM100	TCGA-D3-A8GS	TCGA-D3-A8GS-06A		Distant Metastasis
+SKCM101	TCGA-D3-A8GV	TCGA-D3-A8GV-06A		Distant Metastasis
+SKCM102	TCGA-D9-A148	TCGA-D9-A148-06A		Regional Lymph Node
+SKCM103	TCGA-D9-A149	TCGA-D9-A149-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM104	TCGA-D9-A1JW	TCGA-D9-A1JW-06A		Regional Lymph Node
+SKCM105	TCGA-D9-A1JX	TCGA-D9-A1JX-06A		Regional Lymph Node
+SKCM106	TCGA-D9-A1X3	TCGA-D9-A1X3-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM107	TCGA-D9-A3Z1	TCGA-D9-A3Z1-06A		Regional Lymph Node
+SKCM108	TCGA-D9-A3Z3	TCGA-D9-A3Z3-06A		Regional Lymph Node
+SKCM109	TCGA-D9-A3Z4	TCGA-D9-A3Z4-01A		Primary Tumor
+SKCM110	TCGA-D9-A4Z2	TCGA-D9-A4Z2-01A		Primary Tumor
+SKCM111	TCGA-D9-A4Z3	TCGA-D9-A4Z3-01A		Primary Tumor
+SKCM112	TCGA-D9-A4Z5	TCGA-D9-A4Z5-01A		
+SKCM113	TCGA-D9-A4Z6	TCGA-D9-A4Z6-06A		Regional Lymph Node
+SKCM114	TCGA-D9-A6E9	TCGA-D9-A6E9-06A		Primary Tumor
+SKCM115	TCGA-D9-A6EA	TCGA-D9-A6EA-06A		
+SKCM116	TCGA-D9-A6EC	TCGA-D9-A6EC-06A		Regional Lymph Node
+SKCM117	TCGA-D9-A6EG	TCGA-D9-A6EG-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM118	TCGA-DA-A1HV	TCGA-DA-A1HV-06A		Regional Lymph Node
+SKCM119	TCGA-DA-A1HW	TCGA-DA-A1HW-06A		Regional Lymph Node
+SKCM120	TCGA-DA-A1HY	TCGA-DA-A1HY-06A		Regional Lymph Node
+SKCM121	TCGA-DA-A1I0	TCGA-DA-A1I0-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM122	TCGA-DA-A1I1	TCGA-DA-A1I1-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM123	TCGA-DA-A1I2	TCGA-DA-A1I2-06A		Regional Lymph Node
+SKCM124	TCGA-DA-A1I4	TCGA-DA-A1I4-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM125	TCGA-DA-A1I5	TCGA-DA-A1I5-06A		Distant Metastasis
+SKCM126	TCGA-DA-A1I7	TCGA-DA-A1I7-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM127	TCGA-DA-A1I8	TCGA-DA-A1I8-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM128	TCGA-DA-A1IA	TCGA-DA-A1IA-06A		Distant Metastasis
+SKCM129	TCGA-DA-A1IB	TCGA-DA-A1IB-06A		Regional Lymph Node
+SKCM130	TCGA-DA-A1IC	TCGA-DA-A1IC-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM131	TCGA-DA-A3F2	TCGA-DA-A3F2-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM132	TCGA-DA-A3F3	TCGA-DA-A3F3-06A		Regional Lymph Node
+SKCM133	TCGA-DA-A3F5	TCGA-DA-A3F5-06A		Regional Lymph Node
+SKCM134	TCGA-DA-A3F8	TCGA-DA-A3F8-06A		Regional Lymph Node
+SKCM135	TCGA-DA-A95V	TCGA-DA-A95V-06A		Regional Lymph Node
+SKCM136	TCGA-DA-A95W	TCGA-DA-A95W-06A		Regional Lymph Node
+SKCM137	TCGA-DA-A95X	TCGA-DA-A95X-06A		Regional Lymph Node
+SKCM138	TCGA-DA-A95Y	TCGA-DA-A95Y-06A		Regional Lymph Node
+SKCM139	TCGA-DA-A95Z	TCGA-DA-A95Z-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM140	TCGA-DA-A960	TCGA-DA-A960-01A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM141	TCGA-EB-A1NK	TCGA-EB-A1NK-01A		Primary Tumor
+SKCM142	TCGA-EB-A24C	TCGA-EB-A24C-01A		Primary Tumor
+SKCM143	TCGA-EB-A24D	TCGA-EB-A24D-01A		Primary Tumor
+SKCM144	TCGA-EB-A299	TCGA-EB-A299-01A		Primary Tumor
+SKCM145	TCGA-EB-A3HV	TCGA-EB-A3HV-01A		Primary Tumor
+SKCM146	TCGA-EB-A3XB	TCGA-EB-A3XB-01A		Primary Tumor
+SKCM147	TCGA-EB-A3XC	TCGA-EB-A3XC-01A		Primary Tumor
+SKCM148	TCGA-EB-A3XD	TCGA-EB-A3XD-01A		Primary Tumor
+SKCM149	TCGA-EB-A3XE	TCGA-EB-A3XE-01A		Primary Tumor
+SKCM150	TCGA-EB-A3XF	TCGA-EB-A3XF-01A		Primary Tumor
+SKCM151	TCGA-EB-A3Y6	TCGA-EB-A3Y6-01A		Primary Tumor
+SKCM152	TCGA-EB-A3Y7	TCGA-EB-A3Y7-01A		Primary Tumor
+SKCM153	TCGA-EB-A41A	TCGA-EB-A41A-01A		Primary Tumor
+SKCM154	TCGA-EB-A41B	TCGA-EB-A41B-01A		Primary Tumor
+SKCM155	TCGA-EB-A42Y	TCGA-EB-A42Y-01A		Primary Tumor
+SKCM156	TCGA-EB-A42Z	TCGA-EB-A42Z-01A		Primary Tumor
+SKCM157	TCGA-EB-A430	TCGA-EB-A430-01A		Primary Tumor
+SKCM158	TCGA-EB-A431	TCGA-EB-A431-01A		Primary Tumor
+SKCM159	TCGA-EB-A44N	TCGA-EB-A44N-01A		Primary Tumor
+SKCM160	TCGA-EB-A44O	TCGA-EB-A44O-01A		Primary Tumor
+SKCM161	TCGA-EB-A44P	TCGA-EB-A44P-01A		Primary Tumor
+SKCM162	TCGA-EB-A44Q	TCGA-EB-A44Q-06A		Regional Lymph Node
+SKCM163	TCGA-EB-A44R	TCGA-EB-A44R-06A		Regional Lymph Node
+SKCM164	TCGA-EB-A4IQ	TCGA-EB-A4IQ-01A		Primary Tumor
+SKCM165	TCGA-EB-A4IS	TCGA-EB-A4IS-01A		Primary Tumor
+SKCM166	TCGA-EB-A4OY	TCGA-EB-A4OY-01A		Primary Tumor
+SKCM167	TCGA-EB-A4OZ	TCGA-EB-A4OZ-01A		Primary Tumor
+SKCM168	TCGA-EB-A4P0	TCGA-EB-A4P0-01A		Primary Tumor
+SKCM169	TCGA-EB-A4XL	TCGA-EB-A4XL-01A		Primary Tumor
+SKCM170	TCGA-EB-A51B	TCGA-EB-A51B-01A		Primary Tumor
+SKCM171	TCGA-EB-A550	TCGA-EB-A550-01A		Primary Tumor
+SKCM172	TCGA-EB-A551	TCGA-EB-A551-01A		Primary Tumor
+SKCM173	TCGA-EB-A553	TCGA-EB-A553-01A		Primary Tumor
+SKCM174	TCGA-EB-A57M	TCGA-EB-A57M-01A		Primary Tumor
+SKCM175	TCGA-EB-A5FP	TCGA-EB-A5FP-01A		Primary Tumor
+SKCM176	TCGA-EB-A5KH	TCGA-EB-A5KH-06A		Regional Lymph Node
+SKCM177	TCGA-EB-A5SE	TCGA-EB-A5SE-01A		Primary Tumor
+SKCM178	TCGA-EB-A5SF	TCGA-EB-A5SF-01A		Primary Tumor
+SKCM179	TCGA-EB-A5SG	TCGA-EB-A5SG-06A		Regional Lymph Node
+SKCM180	TCGA-EB-A5SH	TCGA-EB-A5SH-06A		Regional Lymph Node
+SKCM181	TCGA-EB-A5UL	TCGA-EB-A5UL-06A		Regional Lymph Node
+SKCM182	TCGA-EB-A5UM	TCGA-EB-A5UM-01A		Primary Tumor
+SKCM183	TCGA-EB-A5UN	TCGA-EB-A5UN-06A		Distant Metastasis
+SKCM184	TCGA-EB-A5VU	TCGA-EB-A5VU-01A		Primary Tumor
+SKCM185	TCGA-EB-A5VV	TCGA-EB-A5VV-06A		Regional Lymph Node
+SKCM186	TCGA-EB-A6L9	TCGA-EB-A6L9-06A		Regional Lymph Node
+SKCM187	TCGA-EB-A6QY	TCGA-EB-A6QY-01A		Primary Tumor
+SKCM188	TCGA-EB-A6QZ	TCGA-EB-A6QZ-01A		Primary Tumor
+SKCM189	TCGA-EB-A6R0	TCGA-EB-A6R0-01A		Primary Tumor
+SKCM190	TCGA-EB-A82B	TCGA-EB-A82B-01A		Primary Tumor
+SKCM191	TCGA-EB-A82C	TCGA-EB-A82C-01A		Primary Tumor
+SKCM192	TCGA-EB-A85I	TCGA-EB-A85I-01A		Primary Tumor
+SKCM193	TCGA-EB-A85J	TCGA-EB-A85J-01A		Primary Tumor
+SKCM194	TCGA-EB-A97M	TCGA-EB-A97M-01A		Primary Tumor
+SKCM195	TCGA-EE-A17X	TCGA-EE-A17X-06A		Regional Lymph Node
+SKCM196	TCGA-EE-A17Y	TCGA-EE-A17Y-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM197	TCGA-EE-A17Z	TCGA-EE-A17Z-06A		Regional Lymph Node
+SKCM198	TCGA-EE-A180	TCGA-EE-A180-06A		Distant Metastasis
+SKCM199	TCGA-EE-A181	TCGA-EE-A181-06A		Regional Lymph Node
+SKCM200	TCGA-EE-A182	TCGA-EE-A182-06A		Distant Metastasis
+SKCM201	TCGA-EE-A183	TCGA-EE-A183-06A		Regional Lymph Node
+SKCM202	TCGA-EE-A184	TCGA-EE-A184-06A		Distant Metastasis
+SKCM203	TCGA-EE-A185	TCGA-EE-A185-06A		Regional Lymph Node
+SKCM204	TCGA-EE-A20B	TCGA-EE-A20B-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM205	TCGA-EE-A20C	TCGA-EE-A20C-06A		Distant Metastasis
+SKCM206	TCGA-EE-A20F	TCGA-EE-A20F-06A		Regional Lymph Node
+SKCM207	TCGA-EE-A20H	TCGA-EE-A20H-06A		Distant Metastasis
+SKCM208	TCGA-EE-A20I	TCGA-EE-A20I-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM209	TCGA-EE-A29A	TCGA-EE-A29A-06A		Distant Metastasis
+SKCM210	TCGA-EE-A29B	TCGA-EE-A29B-06A		Distant Metastasis
+SKCM211	TCGA-EE-A29C	TCGA-EE-A29C-06A		Regional Lymph Node
+SKCM212	TCGA-EE-A29D	TCGA-EE-A29D-06A		Regional Lymph Node
+SKCM213	TCGA-EE-A29E	TCGA-EE-A29E-06A		Regional Lymph Node
+SKCM214	TCGA-EE-A29G	TCGA-EE-A29G-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM215	TCGA-EE-A29H	TCGA-EE-A29H-06A		Regional Lymph Node
+SKCM216	TCGA-EE-A29L	TCGA-EE-A29L-06A		Regional Lymph Node
+SKCM217	TCGA-EE-A29M	TCGA-EE-A29M-06A		Regional Lymph Node
+SKCM218	TCGA-EE-A29N	TCGA-EE-A29N-06A		Regional Lymph Node
+SKCM219	TCGA-EE-A29P	TCGA-EE-A29P-06A		Regional Lymph Node
+SKCM220	TCGA-EE-A29Q	TCGA-EE-A29Q-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM221	TCGA-EE-A29R	TCGA-EE-A29R-06A		Regional Lymph Node
+SKCM222	TCGA-EE-A29S	TCGA-EE-A29S-06A		Regional Lymph Node
+SKCM223	TCGA-EE-A29T	TCGA-EE-A29T-06A		Regional Lymph Node
+SKCM224	TCGA-EE-A29V	TCGA-EE-A29V-06A		Distant Metastasis
+SKCM225	TCGA-EE-A29W	TCGA-EE-A29W-06A		Regional Lymph Node
+SKCM226	TCGA-EE-A29X	TCGA-EE-A29X-06A		Regional Lymph Node
+SKCM227	TCGA-EE-A2A0	TCGA-EE-A2A0-06A		Regional Lymph Node
+SKCM228	TCGA-EE-A2A1	TCGA-EE-A2A1-06A		Regional Lymph Node
+SKCM229	TCGA-EE-A2A2	TCGA-EE-A2A2-06A		Regional Lymph Node
+SKCM230	TCGA-EE-A2A5	TCGA-EE-A2A5-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM231	TCGA-EE-A2A6	TCGA-EE-A2A6-06A		Regional Lymph Node
+SKCM232	TCGA-EE-A2GB	TCGA-EE-A2GB-06A		Regional Lymph Node
+SKCM233	TCGA-EE-A2GC	TCGA-EE-A2GC-06A		Regional Lymph Node
+SKCM234	TCGA-EE-A2GD	TCGA-EE-A2GD-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM235	TCGA-EE-A2GE	TCGA-EE-A2GE-06A		Regional Lymph Node
+SKCM236	TCGA-EE-A2GH	TCGA-EE-A2GH-06A		Regional Lymph Node
+SKCM237	TCGA-EE-A2GI	TCGA-EE-A2GI-06A		Regional Lymph Node
+SKCM238	TCGA-EE-A2GJ	TCGA-EE-A2GJ-06A		Regional Lymph Node
+SKCM239	TCGA-EE-A2GK	TCGA-EE-A2GK-06A		Regional Lymph Node
+SKCM240	TCGA-EE-A2GL	TCGA-EE-A2GL-06A		Regional Lymph Node
+SKCM241	TCGA-EE-A2GM	TCGA-EE-A2GM-06B		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM242	TCGA-EE-A2GN	TCGA-EE-A2GN-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM243	TCGA-EE-A2GO	TCGA-EE-A2GO-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM244	TCGA-EE-A2GP	TCGA-EE-A2GP-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM245	TCGA-EE-A2GR	TCGA-EE-A2GR-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM246	TCGA-EE-A2GS	TCGA-EE-A2GS-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM247	TCGA-EE-A2GT	TCGA-EE-A2GT-06A		Regional Lymph Node
+SKCM248	TCGA-EE-A2GU	TCGA-EE-A2GU-06A		Regional Lymph Node
+SKCM249	TCGA-EE-A2M5	TCGA-EE-A2M5-06A		Regional Lymph Node
+SKCM250	TCGA-EE-A2M6	TCGA-EE-A2M6-06A		Regional Lymph Node
+SKCM251	TCGA-EE-A2M7	TCGA-EE-A2M7-06A		Regional Lymph Node
+SKCM252	TCGA-EE-A2M8	TCGA-EE-A2M8-06A		Regional Lymph Node
+SKCM253	TCGA-EE-A2MC	TCGA-EE-A2MC-06A		Regional Lymph Node
+SKCM254	TCGA-EE-A2MD	TCGA-EE-A2MD-06A		Regional Lymph Node
+SKCM255	TCGA-EE-A2ME	TCGA-EE-A2ME-06A		Regional Lymph Node
+SKCM256	TCGA-EE-A2MF	TCGA-EE-A2MF-06A		Regional Lymph Node
+SKCM257	TCGA-EE-A2MG	TCGA-EE-A2MG-06A		Regional Lymph Node
+SKCM258	TCGA-EE-A2MH	TCGA-EE-A2MH-06A		Regional Lymph Node
+SKCM259	TCGA-EE-A2MI	TCGA-EE-A2MI-06A		Regional Lymph Node
+SKCM260	TCGA-EE-A2MJ	TCGA-EE-A2MJ-06A		Regional Lymph Node
+SKCM261	TCGA-EE-A2MK	TCGA-EE-A2MK-06A		Regional Lymph Node
+SKCM262	TCGA-EE-A2ML	TCGA-EE-A2ML-06A		Regional Lymph Node
+SKCM263	TCGA-EE-A2MM	TCGA-EE-A2MM-06A		Regional Lymph Node
+SKCM264	TCGA-EE-A2MN	TCGA-EE-A2MN-06A		Regional Lymph Node
+SKCM265	TCGA-EE-A2MP	TCGA-EE-A2MP-06A		Regional Lymph Node
+SKCM266	TCGA-EE-A2MQ	TCGA-EE-A2MQ-06A		Regional Lymph Node
+SKCM267	TCGA-EE-A2MR	TCGA-EE-A2MR-06A		Regional Lymph Node
+SKCM268	TCGA-EE-A2MS	TCGA-EE-A2MS-06A		Regional Lymph Node
+SKCM269	TCGA-EE-A2MT	TCGA-EE-A2MT-06A		Regional Lymph Node
+SKCM270	TCGA-EE-A2MU	TCGA-EE-A2MU-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM271	TCGA-EE-A3AA	TCGA-EE-A3AA-06A		Regional Lymph Node
+SKCM272	TCGA-EE-A3AB	TCGA-EE-A3AB-06A		Regional Lymph Node
+SKCM273	TCGA-EE-A3AC	TCGA-EE-A3AC-06A		Regional Lymph Node
+SKCM274	TCGA-EE-A3AD	TCGA-EE-A3AD-06A		Regional Lymph Node
+SKCM275	TCGA-EE-A3AF	TCGA-EE-A3AF-06A		Regional Lymph Node
+SKCM276	TCGA-EE-A3AG	TCGA-EE-A3AG-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM277	TCGA-EE-A3AH	TCGA-EE-A3AH-06A		Regional Lymph Node
+SKCM278	TCGA-EE-A3J3	TCGA-EE-A3J3-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM279	TCGA-EE-A3J4	TCGA-EE-A3J4-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM280	TCGA-EE-A3J5	TCGA-EE-A3J5-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM281	TCGA-EE-A3J7	TCGA-EE-A3J7-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM282	TCGA-EE-A3J8	TCGA-EE-A3J8-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM283	TCGA-EE-A3JA	TCGA-EE-A3JA-06A		Regional Lymph Node
+SKCM284	TCGA-EE-A3JB	TCGA-EE-A3JB-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM285	TCGA-EE-A3JD	TCGA-EE-A3JD-06A		Regional Lymph Node
+SKCM286	TCGA-EE-A3JE	TCGA-EE-A3JE-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM287	TCGA-EE-A3JH	TCGA-EE-A3JH-06A		Regional Lymph Node
+SKCM288	TCGA-EE-A3JI	TCGA-EE-A3JI-06A		Regional Lymph Node
+SKCM289	TCGA-ER-A193	TCGA-ER-A193-06A		Regional Lymph Node
+SKCM290	TCGA-ER-A194	TCGA-ER-A194-01A		Primary Tumor
+SKCM291	TCGA-ER-A195	TCGA-ER-A195-06A		Regional Lymph Node
+SKCM292	TCGA-ER-A196	TCGA-ER-A196-01A		Primary Tumor
+SKCM293	TCGA-ER-A197	TCGA-ER-A197-06A		
+SKCM294	TCGA-ER-A198	TCGA-ER-A198-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM295	TCGA-ER-A199	TCGA-ER-A199-06A		Regional Lymph Node
+SKCM296	TCGA-ER-A19A	TCGA-ER-A19A-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM297	TCGA-ER-A19B	TCGA-ER-A19B-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM298	TCGA-ER-A19C	TCGA-ER-A19C-06A		Regional Lymph Node
+SKCM299	TCGA-ER-A19D	TCGA-ER-A19D-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM300	TCGA-ER-A19E	TCGA-ER-A19E-06A		Regional Lymph Node
+SKCM301	TCGA-ER-A19F	TCGA-ER-A19F-06A		Regional Lymph Node
+SKCM302	TCGA-ER-A19G	TCGA-ER-A19G-06A		Regional Lymph Node
+SKCM303	TCGA-ER-A19H	TCGA-ER-A19H-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM304	TCGA-ER-A19J	TCGA-ER-A19J-06A		Regional Lymph Node
+SKCM305	TCGA-ER-A19K	TCGA-ER-A19K-01A		Primary Tumor
+SKCM306	TCGA-ER-A19L	TCGA-ER-A19L-06A		Regional Lymph Node
+SKCM307	TCGA-ER-A19M	TCGA-ER-A19M-06A		Regional Lymph Node
+SKCM308	TCGA-ER-A19N	TCGA-ER-A19N-06A		Regional Lymph Node
+SKCM309	TCGA-ER-A19O	TCGA-ER-A19O-06A		Regional Lymph Node
+SKCM310	TCGA-ER-A19P	TCGA-ER-A19P-06A		Regional Lymph Node
+SKCM311	TCGA-ER-A19Q	TCGA-ER-A19Q-06A		Regional Lymph Node
+SKCM312	TCGA-ER-A19S	TCGA-ER-A19S-06A		Regional Lymph Node
+SKCM313	TCGA-ER-A19T	TCGA-ER-A19T-06A		Primary Tumor
+SKCM314	TCGA-ER-A19W	TCGA-ER-A19W-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM315	TCGA-ER-A1A1	TCGA-ER-A1A1-06A		Regional Lymph Node
+SKCM316	TCGA-ER-A2NB	TCGA-ER-A2NB-01A		Primary Tumor
+SKCM317	TCGA-ER-A2NC	TCGA-ER-A2NC-06A		Distant Metastasis
+SKCM318	TCGA-ER-A2ND	TCGA-ER-A2ND-06A		Distant Metastasis
+SKCM319	TCGA-ER-A2NE	TCGA-ER-A2NE-06A		Distant Metastasis
+SKCM320	TCGA-ER-A2NF	TCGA-ER-A2NF-06A		Primary Tumor
+SKCM321	TCGA-ER-A2NG	TCGA-ER-A2NG-06A		Regional Lymph Node
+SKCM322	TCGA-ER-A2NH	TCGA-ER-A2NH-06A		Regional Lymph Node
+SKCM323	TCGA-ER-A3ES	TCGA-ER-A3ES-06A		Distant Metastasis
+SKCM324	TCGA-ER-A3ET	TCGA-ER-A3ET-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM325	TCGA-ER-A3EV	TCGA-ER-A3EV-06A		Distant Metastasis
+SKCM326	TCGA-ER-A3PL	TCGA-ER-A3PL-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM327	TCGA-ER-A42H	TCGA-ER-A42H-01A		Primary Tumor
+SKCM328	TCGA-ER-A42K	TCGA-ER-A42K-06A		Regional Lymph Node
+SKCM329	TCGA-ER-A42L	TCGA-ER-A42L-06A		Distant Metastasis
+SKCM330	TCGA-FR-A2OS	TCGA-FR-A2OS-01A		Primary Tumor
+SKCM331	TCGA-FR-A3R1	TCGA-FR-A3R1-01A		Primary Tumor
+SKCM332	TCGA-FR-A3YN	TCGA-FR-A3YN-06A		Regional Lymph Node
+SKCM333	TCGA-FR-A3YO	TCGA-FR-A3YO-06A		Distant Metastasis
+SKCM334	TCGA-FR-A44A	TCGA-FR-A44A-06A		Regional Lymph Node
+SKCM335	TCGA-FR-A69P	TCGA-FR-A69P-06A		Regional Lymph Node
+SKCM336	TCGA-FR-A726	TCGA-FR-A726-01A		Primary Tumor
+SKCM337	TCGA-FR-A728	TCGA-FR-A728-01A		Primary Tumor
+SKCM338	TCGA-FR-A729	TCGA-FR-A729-06A		Regional Lymph Node
+SKCM339	TCGA-FR-A7U8	TCGA-FR-A7U8-06A		Distant Metastasis
+SKCM340	TCGA-FR-A7U9	TCGA-FR-A7U9-06A		Regional Lymph Node
+SKCM341	TCGA-FR-A7UA	TCGA-FR-A7UA-06A		Regional Lymph Node
+SKCM342	TCGA-FR-A8YC	TCGA-FR-A8YC-06A		Distant Metastasis
+SKCM343	TCGA-FR-A8YD	TCGA-FR-A8YD-06A		Distant Metastasis
+SKCM344	TCGA-FR-A8YE	TCGA-FR-A8YE-06A		Regional Lymph Node
+SKCM345	TCGA-FS-A1YW	TCGA-FS-A1YW-06A		Regional Lymph Node
+SKCM346	TCGA-FS-A1YX	TCGA-FS-A1YX-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM347	TCGA-FS-A1YY	TCGA-FS-A1YY-06A		Distant Metastasis
+SKCM348	TCGA-FS-A1Z0	TCGA-FS-A1Z0-06A		Distant Metastasis
+SKCM349	TCGA-FS-A1Z3	TCGA-FS-A1Z3-06A		Distant Metastasis
+SKCM350	TCGA-FS-A1Z4	TCGA-FS-A1Z4-06A		Regional Lymph Node
+SKCM351	TCGA-FS-A1Z7	TCGA-FS-A1Z7-06A		Regional Lymph Node
+SKCM352	TCGA-FS-A1ZA	TCGA-FS-A1ZA-06A		Distant Metastasis
+SKCM353	TCGA-FS-A1ZB	TCGA-FS-A1ZB-06A		Distant Metastasis
+SKCM354	TCGA-FS-A1ZC	TCGA-FS-A1ZC-06A		Distant Metastasis
+SKCM355	TCGA-FS-A1ZD	TCGA-FS-A1ZD-06A		Regional Lymph Node
+SKCM356	TCGA-FS-A1ZE	TCGA-FS-A1ZE-06A		Distant Metastasis
+SKCM357	TCGA-FS-A1ZF	TCGA-FS-A1ZF-06A		Distant Metastasis
+SKCM358	TCGA-FS-A1ZG	TCGA-FS-A1ZG-06A		Regional Lymph Node
+SKCM359	TCGA-FS-A1ZH	TCGA-FS-A1ZH-06A		Regional Lymph Node
+SKCM360	TCGA-FS-A1ZJ	TCGA-FS-A1ZJ-06A		Regional Lymph Node
+SKCM361	TCGA-FS-A1ZK	TCGA-FS-A1ZK-06A		Distant Metastasis
+SKCM362	TCGA-FS-A1ZM	TCGA-FS-A1ZM-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM363	TCGA-FS-A1ZN	TCGA-FS-A1ZN-01A		Primary Tumor
+SKCM364	TCGA-FS-A1ZP	TCGA-FS-A1ZP-06A		Regional Lymph Node
+SKCM365	TCGA-FS-A1ZQ	TCGA-FS-A1ZQ-06A		Distant Metastasis
+SKCM366	TCGA-FS-A1ZR	TCGA-FS-A1ZR-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM367	TCGA-FS-A1ZS	TCGA-FS-A1ZS-06A		Regional Lymph Node
+SKCM368	TCGA-FS-A1ZT	TCGA-FS-A1ZT-06A		Distant Metastasis
+SKCM369	TCGA-FS-A1ZU	TCGA-FS-A1ZU-06A		Distant Metastasis
+SKCM370	TCGA-FS-A1ZW	TCGA-FS-A1ZW-06A		Regional Lymph Node
+SKCM371	TCGA-FS-A1ZY	TCGA-FS-A1ZY-06A		Distant Metastasis
+SKCM372	TCGA-FS-A1ZZ	TCGA-FS-A1ZZ-06A		Distant Metastasis
+SKCM373	TCGA-FS-A4F0	TCGA-FS-A4F0-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM374	TCGA-FS-A4F2	TCGA-FS-A4F2-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM375	TCGA-FS-A4F4	TCGA-FS-A4F4-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM376	TCGA-FS-A4F5	TCGA-FS-A4F5-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM377	TCGA-FS-A4F8	TCGA-FS-A4F8-06A		Regional Lymph Node
+SKCM378	TCGA-FS-A4F9	TCGA-FS-A4F9-06A		Regional Lymph Node
+SKCM379	TCGA-FS-A4FB	TCGA-FS-A4FB-06A		Regional Lymph Node
+SKCM380	TCGA-FS-A4FC	TCGA-FS-A4FC-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM381	TCGA-FS-A4FD	TCGA-FS-A4FD-06A		Regional Lymph Node
+SKCM382	TCGA-FW-A3I3	TCGA-FW-A3I3-06A		Distant Metastasis
+SKCM383	TCGA-FW-A3R5	TCGA-FW-A3R5-06A		Regional Lymph Node
+SKCM384	TCGA-FW-A3TU	TCGA-FW-A3TU-06A		Distant Metastasis
+SKCM385	TCGA-FW-A3TV	TCGA-FW-A3TV-06A		Regional Lymph Node
+SKCM386	TCGA-FW-A5DX	TCGA-FW-A5DX-01A		Primary Tumor
+SKCM387	TCGA-FW-A5DY	TCGA-FW-A5DY-06A		Regional Lymph Node
+SKCM388	TCGA-GF-A2C7	TCGA-GF-A2C7-01A		Primary Tumor
+SKCM389	TCGA-GF-A3OT	TCGA-GF-A3OT-06A		Regional Lymph Node
+SKCM390	TCGA-GF-A4EO	TCGA-GF-A4EO-06A		Regional Lymph Node
+SKCM391	TCGA-GF-A6C8	TCGA-GF-A6C8-06A		Regional Lymph Node
+SKCM392	TCGA-GF-A6C9	TCGA-GF-A6C9-06A		Distant Metastasis
+SKCM393	TCGA-GF-A769	TCGA-GF-A769-01A		Primary Tumor
+SKCM394	TCGA-GN-A262	TCGA-GN-A262-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM395	TCGA-GN-A263	TCGA-GN-A263-01A		Primary Tumor
+SKCM396	TCGA-GN-A264	TCGA-GN-A264-06A		Regional Lymph Node
+SKCM397	TCGA-GN-A265	TCGA-GN-A265-06A		Regional Lymph Node
+SKCM398	TCGA-GN-A266	TCGA-GN-A266-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM399	TCGA-GN-A267	TCGA-GN-A267-06A		Regional Lymph Node
+SKCM400	TCGA-GN-A268	TCGA-GN-A268-06A		Regional Lymph Node
+SKCM401	TCGA-GN-A26A	TCGA-GN-A26A-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM402	TCGA-GN-A26C	TCGA-GN-A26C-01A		Primary Tumor
+SKCM403	TCGA-GN-A26D	TCGA-GN-A26D-06A		Regional Lymph Node
+SKCM404	TCGA-GN-A4U3	TCGA-GN-A4U3-06A		Distant Metastasis
+SKCM405	TCGA-GN-A4U4	TCGA-GN-A4U4-06A		Regional Lymph Node
+SKCM406	TCGA-GN-A4U5	TCGA-GN-A4U5-01A		Primary Tumor
+SKCM407	TCGA-GN-A4U7	TCGA-GN-A4U7-06A		Regional Lymph Node
+SKCM408	TCGA-GN-A4U8	TCGA-GN-A4U8-06A		Regional Lymph Node
+SKCM409	TCGA-GN-A4U9	TCGA-GN-A4U9-06A		Regional Lymph Node
+SKCM410	TCGA-GN-A8LK	TCGA-GN-A8LK-06A		Distant Metastasis
+SKCM411	TCGA-GN-A8LL	TCGA-GN-A8LL-06A		Regional Lymph Node
+SKCM412	TCGA-GN-A8LN	TCGA-GN-A8LN-01A		Primary Tumor
+SKCM413	TCGA-GN-A9SD	TCGA-GN-A9SD-06A		Regional Lymph Node
+SKCM414	TCGA-HR-A2OG	TCGA-HR-A2OG-06A		Distant Metastasis
+SKCM415	TCGA-HR-A2OH	TCGA-HR-A2OH-06A		Distant Metastasis
+SKCM416	TCGA-HR-A5NC	TCGA-HR-A5NC-01A		Primary Tumor
+SKCM417	TCGA-IH-A3EA	TCGA-IH-A3EA-01A		Primary Tumor
+SKCM418	TCGA-LH-A9QB	TCGA-LH-A9QB-06A		Distant Metastasis
+SKCM419	TCGA-OD-A75X	TCGA-OD-A75X-06A		Distant Metastasis
+SKCM420	TCGA-QB-A6FS	TCGA-QB-A6FS-06A		Regional Lymph Node
+SKCM421	TCGA-QB-AA9O	TCGA-QB-AA9O-06A		Regional Lymph Node
+SKCM422	TCGA-RP-A690	TCGA-RP-A690-06A		Distant Metastasis
+SKCM423	TCGA-RP-A693	TCGA-RP-A693-06A		Distant Metastasis
+SKCM424	TCGA-RP-A694	TCGA-RP-A694-06A		Distant Metastasis
+SKCM425	TCGA-RP-A695	TCGA-RP-A695-06A		Distant Metastasis
+SKCM426	TCGA-RP-A6K9	TCGA-RP-A6K9-06A		Distant Metastasis
+SKCM427	TCGA-W3-A824	TCGA-W3-A824-06A		Regional Lymph Node
+SKCM428	TCGA-W3-A825	TCGA-W3-A825-06A		Distant Metastasis
+SKCM429	TCGA-W3-A828	TCGA-W3-A828-06A		Distant Metastasis
+SKCM430	TCGA-W3-AA1O	TCGA-W3-AA1O-06A		Regional Lymph Node
+SKCM431	TCGA-W3-AA1Q	TCGA-W3-AA1Q-06A		Distant Metastasis
+SKCM432	TCGA-W3-AA1R	TCGA-W3-AA1R-06A		Regional Lymph Node
+SKCM433	TCGA-W3-AA1V	TCGA-W3-AA1V-06B		Regional Lymph Node
+SKCM434	TCGA-W3-AA1W	TCGA-W3-AA1W-06A		Distant Metastasis
+SKCM435	TCGA-W3-AA21	TCGA-W3-AA21-06A		Regional Lymph Node
+SKCM436	TCGA-WE-A8JZ	TCGA-WE-A8JZ-06A		Regional Lymph Node
+SKCM437	TCGA-WE-A8K1	TCGA-WE-A8K1-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM438	TCGA-WE-A8K4	TCGA-WE-A8K4-01A		Primary Tumor
+SKCM439	TCGA-WE-A8K5	TCGA-WE-A8K5-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM440	TCGA-WE-A8K6	TCGA-WE-A8K6-06A		Regional Lymph Node
+SKCM441	TCGA-WE-A8ZM	TCGA-WE-A8ZM-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM442	TCGA-WE-A8ZN	TCGA-WE-A8ZN-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM443	TCGA-WE-A8ZO	TCGA-WE-A8ZO-06A		Regional Lymph Node
+SKCM444	TCGA-WE-A8ZQ	TCGA-WE-A8ZQ-06A		Regional Lymph Node
+SKCM445	TCGA-WE-A8ZR	TCGA-WE-A8ZR-06A		Regional Lymph Node
+SKCM446	TCGA-WE-A8ZT	TCGA-WE-A8ZT-06A		Regional Lymph Node
+SKCM447	TCGA-WE-A8ZX	TCGA-WE-A8ZX-06A		Regional Lymph Node
+SKCM448	TCGA-WE-A8ZY	TCGA-WE-A8ZY-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM449	TCGA-WE-AA9Y	TCGA-WE-AA9Y-06A		Regional Lymph Node
+SKCM450	TCGA-WE-AAA0	TCGA-WE-AAA0-06A		Regional Lymph Node
+SKCM451	TCGA-WE-AAA3	TCGA-WE-AAA3-06A		Regional Lymph Node
+SKCM452	TCGA-WE-AAA4	TCGA-WE-AAA4-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM453	TCGA-XV-A9VZ	TCGA-XV-A9VZ-01A		Primary Tumor
+SKCM454	TCGA-XV-A9W2	TCGA-XV-A9W2-01A		Primary Tumor
+SKCM455	TCGA-XV-A9W5	TCGA-XV-A9W5-01A		Primary Tumor
+SKCM456	TCGA-XV-AAZV	TCGA-XV-AAZV-01A		Primary Tumor
+SKCM457	TCGA-XV-AAZW	TCGA-XV-AAZW-01A		Primary Tumor
+SKCM458	TCGA-XV-AAZY	TCGA-XV-AAZY-01A		Primary Tumor
+SKCM459	TCGA-XV-AB01	TCGA-XV-AB01-06A		Regional Lymph Node
+SKCM460	TCGA-YD-A89C	TCGA-YD-A89C-06A		Distant Metastasis
+SKCM461	TCGA-YD-A9TA	TCGA-YD-A9TA-06A		Distant Metastasis
+SKCM462	TCGA-YD-A9TB	TCGA-YD-A9TB-06A		Distant Metastasis
+SKCM463	TCGA-YG-AA3N	TCGA-YG-AA3N-01A		Primary Tumor
+SKCM464	TCGA-YG-AA3O	TCGA-YG-AA3O-06A		Regional Lymph Node
+SKCM465	TCGA-YG-AA3P	TCGA-YG-AA3P-06A		Distant Metastasis
+SKCM466	TCGA-Z2-A8RT	TCGA-Z2-A8RT-06A		Regional Cutaneous or Subcutaneous Tissue (includes satellite and in-transit metastasis)
+SKCM467	TCGA-Z2-AA3S	TCGA-Z2-AA3S-06A		Regional Lymph Node
+SKCM468	TCGA-Z2-AA3V	TCGA-Z2-AA3V-06A		Regional Lymph Node

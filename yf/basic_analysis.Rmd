@@ -1,0 +1,280 @@
+---
+title: "basic"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(data.table)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(NMF)
+library(reshape2)
+library(parallel)
+library(RColorBrewer)
+library(scales)
+
+select = dplyr::select
+
+read_mixcr_old = function(cmd) {
+  fread(cmd) %>%
+    filter(nchar(`AA. Seq. CDR1`) > 0, nchar(`AA. Seq. CDR2`) > 0, nchar(`AA. Seq. CDR3`) >= 5,
+           !grepl("[*_]", paste(`AA. Seq. CDR1`, `AA. Seq. CDR2`, `AA. Seq. CDR3`, `AA. Seq. FR1`, `AA. Seq. FR2`, `AA. Seq. FR3`))) %>%
+    group_by(v = str_split_fixed(`All V hits`, fixed("*"), 2)[,1],
+             isotype = str_split_fixed(`All C hits`, fixed("*"), 2)[,1],
+             cdr1aa = `AA. Seq. CDR1`,
+             cdr2aa = `AA. Seq. CDR2`,
+             cdr3aa = `AA. Seq. CDR3`,
+             refs = `Ref. points`) %>%
+    summarise(count = sum(`Clone count`), freq = sum(`Clone fraction`)) %>%
+    transform_refpoints
+}
+
+read_mixcr_new = function(cmd) {
+  fread(cmd) %>%
+    filter(nchar(aaSeqCDR1) > 0, nchar(aaSeqCDR2) > 0, nchar(aaSeqCDR3) >= 5,
+           !grepl("[*_]", paste(aaSeqCDR1, aaSeqCDR2, aaSeqCDR3, aaSeqFR1, aaSeqFR2, aaSeqFR3))) %>%
+    group_by(v = str_split_fixed(allVHitsWithScore, fixed("*"), 2)[,1],
+             isotype = str_split_fixed(allCHitsWithScore, fixed("*"), 2)[,1],
+             cdr1aa = aaSeqCDR1,
+             cdr2aa = aaSeqCDR2,
+             cdr3aa = aaSeqCDR3,
+             refs = refPoints) %>%
+    summarise(count = sum(cloneCount), freq = sum(cloneFraction)) %>%
+    transform_refpoints
+}
+
+transform_refpoints = function(data) {
+  tmp = as.data.table(str_split_fixed(data$refs, ":", n = 22)[,c(10,12,13,16,17)])
+  
+  colnames(tmp) = c("cdr3Start", "vEnd", "dStart", "dEnd", "jStart")
+  
+  tmp$cdr3Start = as.integer(tmp$cdr3Start)
+  tmp$vEnd = as.integer(tmp$vEnd)
+  tmp$dStart = as.integer(tmp$dStart)
+  tmp$dEnd = as.integer(tmp$dEnd)
+  tmp$jStart = as.integer(tmp$jStart)
+  
+  data = cbind(as.data.table(data), tmp) %>%
+    mutate(vEnd = vEnd - cdr3Start,
+           dStart = dStart - cdr3Start,
+           dEnd = dEnd - cdr3Start,
+           jStart = jStart - cdr3Start)
+  data$refs = NULL
+  data$cdr3Start = NULL
+  data
+}
+
+read_mixcr = function(sample, path, mixcr_v) {
+  if (mixcr_v == "new") {
+    res = read_mixcr_new(paste0("zcat ", path, "/", sample, ".txt.gz"))
+  } else {
+    res = read_mixcr_old(paste0("zcat ", path, "/", sample, ".txt.gz"))
+  }
+  res %>% mutate(sample_name = sample)
+}
+```
+
+
+```{r}
+dt.meta = fread("metadata.txt")
+
+dt.clones = list()
+
+for (i in 1:nrow(dt.meta)) {
+  dt.clones = with(dt.meta, 
+                   c(dt.clones, 
+                     list(
+                       read_mixcr(sample_name[i], path[i], mixcr_v[i])
+                       )
+                     )
+                   )
+}
+
+dt.clones = rbindlist(dt.clones) %>%
+  merge(dt.meta)
+```
+
+### V usage
+
+```{r, fig.width=6, fig.height=8}
+dt.vusage = dt.clones %>%
+  group_by(sample_name, vaccination, age, v) %>%
+  summarise(freq = sum(freq)) %>% filter(freq > 0.001)
+
+mat.vusage = dt.vusage %>%
+  dcast(sample_name + vaccination + age ~ v, fill = 0)
+
+dt.annot = mat.vusage[,2:3]
+
+rownames(mat.vusage) = mat.vusage$sample_name
+mat.vusage = mat.vusage[,4:ncol(mat.vusage)]
+
+ann_colors = c()
+
+i = 2
+for (annR in colnames(dt.annot)) {
+  n = length(unique(dt.annot[[annR]]))
+  tmp = list(x = c(brewer.pal(n, name = paste0("Set",i))[1:n]))
+  names(tmp) = annR
+  ann_colors = c(ann_colors, tmp)
+  i = i + 1
+}
+
+pdf("figures/p1.pdf", width = 6, height = 8)
+aheatmap(pmin(as.matrix(t(mat.vusage)), 0.15),
+         hclustfun = "ward",
+         annCol = dt.annot, annColors = ann_colors,
+         scale = "none")
+dev.off()
+aheatmap(pmin(as.matrix(t(mat.vusage)), 0.15),
+         hclustfun = "ward",
+         annCol = dt.annot, annColors = ann_colors,
+         scale = "none")
+```
+
+## VDJ junction structure
+
+```{r}
+dt.ins = dt.clones %>% filter(!is.na(dEnd)) %>% 
+  mutate(nIns = dStart - vEnd + jStart - dEnd) %>%
+  group_by(sample_name) %>%
+  mutate(freq = freq/sum(freq))
+
+p2a=ggplot(dt.ins, aes(x = nIns, group = sample_name, weight = freq, color = group)) +
+  geom_density(adjust = 2) +
+  #scale_x_continuous(limits=c(-0.001,50)) + 
+  scale_color_brewer(guide = F, palette = "Set1") +
+  scale_x_continuous("# inserted N bases", expand = c(0,0)) + scale_y_continuous("", expand = c(0,0)) +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())
+p2a
+
+dt.ins.s = dt.ins %>%
+  group_by(group, sample_name) %>%
+  summarise(nInsS = sum(nIns * freq))
+
+p2b=ggplot(dt.ins.s, aes(x = group, group = group, y = nInsS, fill = group)) +
+  geom_boxplot() +
+  #scale_x_continuous(limits=c(-0.001,50)) + 
+  scale_fill_brewer("Group", palette = "Set1") +
+  xlab("") + ylab("") +
+  theme_bw() +
+  theme(aspect=1,
+        panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank())
+p2b
+
+a=aov(nInsS~group,dt.ins.s)
+summary(a)
+TukeyHSD(a, "group")
+```
+
+### Isotype usage
+
+```{r}
+dt.iso = dt.clones %>%
+  filter(vaccination != "none", isotype != "") %>%
+  group_by(sample_name, age, isotype) %>%
+  summarise(freq = sum(freq)) %>%
+  group_by(sample_name) %>%
+  mutate(freq = freq / sum(freq))
+
+dt.iso$sample_name = factor(dt.iso$sample_name,
+                            with(dt.iso %>% filter(isotype == "IGHM"), sample_name[order(freq)]))
+
+dt.iso$isotype = factor(dt.iso$isotype, levels = rev(c("IGHM", "IGHD", "IGHG3", "IGHG1", "IGHA1", "IGHG2", "IGHGP", "IGHE")))
+```
+
+```{r}
+p3=ggplot(dt.iso, aes(x=sample_name, fill = isotype, y = freq)) +
+  geom_bar(position = "stack", stat = "identity", color = "black") +
+  facet_wrap(~age, scales = "free_x") +
+  scale_x_discrete("",expand = c(0,0)) +
+  scale_y_continuous("", expand = c(0,0),labels = percent) +
+  scale_fill_brewer(palette = "YlGnBu") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+p3
+
+dt.p = data.table()
+for (i in unique(dt.iso$isotype)) {
+  a = aov(freq~age, dt.iso %>% filter(isotype == i))
+  p = summary(a)[[1]][["Pr(>F)"]][1]
+  dt.p = rbind(dt.p,
+               data.table(isotype = i, p.adj = p))
+}
+dt.p$p.adj = p.adjust(dt.p$p.adj, method="BH")
+print(dt.p)
+```
+
+### Amino acid feature analysis
+
+```{r}
+dt.clones.cdr3prop = dt.clones %>%
+  group_by(sample_name, group, cdr3aa) %>%
+  summarise(freq = sum(freq))
+```
+
+```{r}
+dt.cdr3.flat = unique(dt.clones.cdr3prop$cdr3aa) %>%
+  strsplit("") %>%
+  mclapply(function(x) data.table(aa = x, cdr3aa = paste0(x, collapse = "")), mc.cores = 60) %>%
+  rbindlist
+```
+
+```{r}
+dt.cdr3.flat.ann = dt.cdr3.flat %>%
+  merge(fread("kidera.txt") %>% mutate(Len = 1) %>% melt, allow.cartesian = T) %>%
+  group_by(cdr3aa, variable) %>%
+  summarise(value = sum(value))
+```
+
+```{r}
+dt.clones.cdr3prop2 = dt.clones.cdr3prop %>%
+  merge(dt.cdr3.flat.ann, by = "cdr3aa", allow.cartesian = T)
+```
+
+```{r}
+dt.clones.cdr3prop.s = dt.clones.cdr3prop2 %>%
+  group_by(sample_name, group, variable) %>%
+  summarise(value = sum(value #/ ifelse(variable == "Len", 1, nchar(cdr3aa)) 
+                        * freq))
+```
+
+```{r}
+dt.p = data.table()
+for (v in unique(dt.clones.cdr3prop.s$variable)) {
+  a = aov(value~group,dt.clones.cdr3prop.s %>% filter(variable == v))
+  p = summary(a)[[1]][["Pr(>F)"]][1]
+  dt.p = rbind(dt.p,
+               data.table(variable = v, p.adj = p))
+}
+dt.p$p.adj = p.adjust(dt.p$p.adj, method="BH")
+
+p4=ggplot(dt.clones.cdr3prop.s %>%
+         merge(dt.p) %>%
+         mutate(variable2 = paste0(variable, ", FDR = ", round(p.adj, 3))), 
+       aes(x = group, fill = group, y = value)) +
+  geom_boxplot() +
+  scale_fill_brewer(guide = F, palette = "Set1") +
+  facet_wrap(~variable2, scales = "free_y") + xlab("") + ylab("") +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+        axis.text.x = element_blank(), axis.ticks.x = element_blank(),
+        strip.background = element_blank())
+p4
+```
+
+```{r}
+ggsave("figures/p2a.pdf", p2a, width = 8, height = 4)
+ggsave("figures/p2b.pdf", p2b, width = 4, height = 4)
+ggsave("figures/p3.pdf", p3, width = 8, height = 4)
+ggsave("figures/p4.pdf", p4, width = 4*2, height = 3*2)
+```
