@@ -11,7 +11,7 @@ class IgorError(Exception):
     pass
 
 
-def run_igor(size, model, dir, template):
+def run_igor(size, model, dir):
     # Note: do not forget to add correct path to igor to PATH variable
 
     if model.startswith('bcr'):
@@ -25,7 +25,8 @@ def run_igor(size, model, dir, template):
            "-set_wd", dir,
            "-chain", chain,
            "-species", "human",
-           "-set_genomic", "--V", template]
+           "-set_custom_model", dir+"model_parms.txt", dir+"model_marginals.txt"
+           ]
 
     process = Popen(cmd, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
@@ -53,22 +54,18 @@ def read_igor_output(dir):
 
 
 def set_counts(df):
-    # the proportion of counts > 140 is about 0.5 if scale == 200
-    threshold = 140
-
-    df['clone_count'] = np.random.exponential(scale=200, size=len(df.index))
-    df['clone_count'] = df['clone_count'].apply(lambda x: round(x) - threshold)
+    n = len(df.index)
+    df['clone_count'] = np.random.multinomial(n=int(0.5 * n), pvals=[1./n]*n, size=1)
     df = df.loc[df['clone_count'] > 0]
-
     return df
 
 
 def make_rep(model, size, dir, template, mutation_rate=0.05):
     if model.startswith('bcr'):
-        # Here BCR repertoire is made up of 0.5 singletons, 0.5 * 1/5 tree roots and 0.5 * 4/5 tree nodes
+        # Here BCR repertoire is made up of 1/5 tree roots and 4/5 other tree nodes
         # Then the repertoire will be downsampled to just a half
-        # Therefore, we need to generate n = 2 * size * 6/10 initial sequences
-        n = int(round(size * 0.6 * 2))
+        # Therefore, we need to generate n = 2 * size * 1/5 initial sequences
+        n = int(round(size * 0.2 * 2))
     else:
         # TCR repertoire is just halved after downsampling
         n = size * 2
@@ -77,8 +74,7 @@ def make_rep(model, size, dir, template, mutation_rate=0.05):
     try:
         run_igor(size=n,
                  model=model,
-                 dir=dir,
-                 template=template)
+                 dir=dir)
     except IgorError:
         raise
 
@@ -158,10 +154,9 @@ parser.add_argument("-n", dest="size", type=int, help='Approximate size of the r
 parser.add_argument("-d", dest="dir", type=str, help='Output directory')
 parser.add_argument("-mr", dest="mutation_rate", type=float, help='Bulk mutation rate')
 parser.add_argument("-s", dest="sequencing_mode", type=str, help='Type of sequencing data (MiSeq/HiSeq/RNASeq')
-parser.add_argument("-t", dest="template", type=str, help='Path to fasta file with genomic templates for IGoR')
 args = parser.parse_args()
 
-rep = make_rep(args.model, args.size, args.dir, args.template, args.mutation_rate)
+rep = make_rep(args.model, args.size, args.dir, args.mutation_rate)
 print('Repertoire is generated')
 rep.to_csv(args.dir + 'clones_init.csv', sep='\t', index=False)
 write_fasta(rep)
