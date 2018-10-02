@@ -6,14 +6,17 @@ import multiprocessing as mp
 
 class Clonotype:
 
-    def __init__(self, seq, index, parent, root, proliferation, mutations):
+    def __init__(self, seq, index, parent, root, proliferation, sub_total, sub_new, indel_total, indel_new, sub_list):
         self.seq = seq
         self.index = index
         self.parent = parent
         self.root = root
         self.proliferation = proliferation
-        self.mutations = mutations
-
+        self.sub_total = sub_total
+        self.sub_new = sub_new
+        self.indel_total = indel_total
+        self.indel_new = indel_new
+        self.sub_list = sub_list
 
 def merge_repertoires(df1, df2, column_list):
     # Reset indices in the listed columns in the second df
@@ -27,15 +30,19 @@ def merge_repertoires(df1, df2, column_list):
     return df
 
 
-def correct_mut_rate(mut_rate):
-    # This coefficient was calculated empirically
-    return mut_rate * 0.543
+def correct_mut_rate(mut_rate, max_tree_height):
+    # These coefficients were calculated empirically
+    if max_tree_height == 15:
+        coeff = 0.1572
+    elif max_tree_height == 5:
+        coeff = 0.543
+    return mut_rate * coeff
 
 
 def parse_model_subs(mut_rate):
     # The assessed frequency of substitutions among all mutations is 0.992
     rate = 0.992 * mut_rate
-    #rate = mut_rate
+    # rate = mut_rate
     f = open('models/hypermutator/model_subs_steele.txt')
     substitution_matrix = np.zeros((4, 4))
     for i, line in enumerate(f):
@@ -114,11 +121,18 @@ def mutate(cl, model_subs, model_indels):
                 new_seq = np.hstack((new_seq[:idx-1], new_seq[idx+indel_lengths[i]:]))
 
         mut_idxs = np.hstack((sub_idxs, indel_idxs))
+        # mut_idxs = sub_idxs
         mut_num = mut_idxs.shape[0]
+        sub_unique = np.unique(np.hstack((cl.sub_total, sub_idxs)))
 
         if mut_num > 0:
             return Clonotype(seq=new_seq, index=0, parent=cl.index, root=cl.root,
-                             proliferation = cl.proliferation, mutations=cl.mutations + mut_num)
+                             proliferation = cl.proliferation,
+                             sub_total = sub_unique.shape[0], 
+                             sub_new = sub_idxs.shape[0],
+                             indel_total = indel_idxs.shape[0] + cl.indel_total, 
+                             indel_new = indel_idxs.shape[0],
+                             sub_list = sub_unique)
 
 
 def df_to_clonotypes(df):
@@ -137,8 +151,16 @@ def df_to_clonotypes(df):
         else:
             proliferation = 1
 
-        g = Clonotype(seq=seq, index=index, parent=index, root=index,
-                      proliferation = proliferation, mutations=0)
+        g = Clonotype(seq=seq, 
+                      index=index, 
+                      parent=index, 
+                      root=index,
+                      proliferation=proliferation,
+                      sub_total=0,
+                      sub_new=0,
+                      indel_total=0,
+                      indel_new=0,
+                      sub_list=[])
         rep.append(g)
 
     return rep
@@ -146,14 +168,11 @@ def df_to_clonotypes(df):
 
 def clonotypes_to_df(rep):
     # Create a data frame from a list of Clonotype objects
-    return pd.concat([pd.DataFrame([[cl.index, cl.parent, cl.root, cl.mutations, array_to_seq(cl.seq)]],
-                                   columns=['index', 'parent', 'root', 'mutations', 'sequence']) for cl in rep],
-                     ignore_index=True)
+    return pd.concat([pd.DataFrame([[cl.index, cl.parent, cl.root, ','.join([str(x) for x in cl.sub_list]),array_to_seq(cl.seq), cl.sub_total, cl.sub_new, cl.indel_total, cl.indel_new]],columns=['index', 'parent', 'root', 'sub_list', 'sequence', 'sub_total', 'sub_new', 'indel_total', 'indel_new']) for cl in rep],ignore_index=True)
 
 
 def mutate_roots(rep, ms, mi):
-    # Introducing "old" mutations into sequences
-    # Applied to tree roots and singletons
+    # Introducing "old" mutations into sequences of tree roots and singletons
     # Does not create new Clonotypes
     new_rep = []
 
@@ -169,80 +188,43 @@ def mutate_roots(rep, ms, mi):
 
 
 def mutate_repertoire(final_mutation_rate, rep_df):
-    # Get correct mutation rate
-    mutation_rate = correct_mut_rate(final_mutation_rate)
-    #print('mut rate corrected')
-    #print(mutation_rate)
+    # max_tree_height = 5
+    max_tree_height = 15
+    mutation_rate = correct_mut_rate(final_mutation_rate, max_tree_height)
+    print(len(rep_df.index))
+    rep_cl = df_to_clonotypes(rep_df)
+    print(len(rep_cl))
 
-    # Split the repertoire to two random samples (1/6 and 5/6) for tree roots and singletons
-    # Note: we want final repertoire to contain half singletons and half tree nodes;
-    # N tree roots give 6N tree nodes in current algorithm
-
-    r = 5/6
-    single_idxs = np.random.choice(rep_df.index, int(len(rep_df.index)*r), replace=False)
-    truefalses = np.array([False] * len(rep_df.index))
-    truefalses[single_idxs] = True
-
-    df_single = rep_df[truefalses]
-    df_single = df_single.reset_index(drop=True)
-    #print(len(df_single.index))
-
-    df_tree = rep_df[~truefalses]
-    df_tree = df_tree.reset_index(drop=True)
-    #print(len(df_tree.index))
-
-    rep_singlet = df_to_clonotypes(df_single)
-    rep_tree = df_to_clonotypes(df_tree)
-
-    # Read SHM and indels patterns with mut.rate 0.01 and mutate tree roots
-    coeff = 0.9
-    ms_root = parse_model_subs(coeff * mutation_rate)
-    mi_root = parse_model_indels(coeff * mutation_rate)
-    rep_tree = mutate_roots(rep_tree, ms_root, mi_root)
-
-    # Reassign proliferation probabilities that were assigned to 1 by default,
-    # because all clonotypes must mutate firstly to simulate "old" mutations
-    probs = np.random.triangular(left=0, mode=0, right=1, size=len(rep_tree))
-    for i, cl in enumerate(rep_tree):
+    # Reassign proliferation probabilities that were assigned to 1 by default
+    probs = np.random.triangular(left=0, mode=0, right=1, size=len(rep_cl))
+    for i, cl in enumerate(rep_cl):
         cl.proliferation = probs[i]
 
     # Read SHM and indels patterns that will be used for singletons and trees
     ms = parse_model_subs(mutation_rate)
     mi = parse_model_indels(mutation_rate)
 
-    # Mutate singletons
-    rep_singlet = mutate_roots(rep_singlet, ms, mi)
-
-    # Iteratively mutate rep_tree_roots creating novel tree nodes
-    for s in range(5):
+    # Iteratively mutate rep_cl_roots creating novel tree nodes
+    for s in range(max_tree_height):
+        print(s)
         pool = mp.Pool()
-        new_rep = [pool.apply(mutate, args=(cl, ms, mi)) for cl in rep_tree]
+        new_rep = [pool.apply(mutate, args=(cl, ms, mi)) for cl in rep_cl]
         new_rep = [cl for cl in new_rep if cl is not None]
         for i, cl in enumerate(new_rep):
-            cl.index = len(rep_tree) + 1 + i
-        rep_tree = rep_tree + new_rep
-    #print(len(rep_tree))
+            cl.index = len(rep_cl) + 1 + i
+        rep_cl = rep_cl + new_rep
+    print(len(rep_cl))
+    print(rep_cl[0])
 
-    # Rep to df
-    rep_singlet_df = clonotypes_to_df(rep_singlet)
-    rep_singlet_df = rep_singlet_df.merge(rep_df, left_on='root', right_on='index')
-    rep_singlet_df['index'] = rep_singlet_df['index_x']
-    rep_singlet_df['sequence'] = rep_singlet_df['sequence_x']
-    rep_singlet_df['single'] = ['single']*len(rep_singlet_df.index)
+    rep_df_mutated = clonotypes_to_df(rep_cl)
+    rep_df_mutated = rep_df_mutated.merge(rep_df, left_on='root', right_on='index')
+    rep_df_mutated['index'] = rep_df_mutated['index_x']
+    rep_df_mutated['sequence'] = rep_df_mutated['sequence_x']
+    rep_df_mutated['single'] = ['tree'] * len(rep_df_mutated.index)
 
-    rep_tree_df = clonotypes_to_df(rep_tree)
-    rep_tree_df = rep_tree_df.merge(rep_df, left_on='root', right_on='index')
-    rep_tree_df['index'] = rep_tree_df['index_x']
-    rep_tree_df['sequence'] = rep_tree_df['sequence_x']
-    rep_tree_df['single'] = ['tree'] * len(rep_tree_df.index)
+    print('rep_df_mutated')
+    print(rep_df_mutated.head())
 
-    print('rep_singlet')
-    print(rep_singlet_df.head())
+    rep_df_mutated = rep_df_mutated.drop(['sequence_x', 'sequence_y', 'index_x', 'index_y'], axis=1)
 
-    print('rep_tree')
-    print(rep_tree_df.head())
-
-    rep = merge_repertoires(rep_tree_df, rep_singlet_df, ['index', 'parent', 'root'])
-    rep = rep.drop(['sequence_x', 'sequence_y', 'index_x', 'index_y'], axis=1)
-
-    return rep
+    return rep_df_mutated

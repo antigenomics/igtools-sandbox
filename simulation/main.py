@@ -10,9 +10,8 @@ from hypermutator import *
 class IgorError(Exception):
     pass
 
-
 def run_igor(size, model, dir):
-    # Note: do not forget to add correct path to igor to PATH variable
+    # Note: do not forget to add correct path to igor to the PATH variable
 
     if model.startswith('bcr'):
         chain = 'heavy_naive'
@@ -41,6 +40,15 @@ def run_igor(size, model, dir):
         raise IgorError('IGoR failed, look igor_log.txt for more information')
 
 
+def find_root_number(size, mutation_rate):
+    # empirical formula for tree_height = 15
+    print(mutation_rate)
+    if mutation_rate < 0.08:
+        return int(size / (15240 * mutation_rate - 151.8))
+    else:
+        return size / 1000
+
+
 def read_igor_output(dir):
     s = pd.read_csv(dir + 'generated_seqs_noerr.csv', sep=';')
     r = pd.read_csv(dir + 'generated_realizations_noerr.csv', sep=';')
@@ -53,22 +61,24 @@ def read_igor_output(dir):
     return pd.concat([s[['index', 'sequence']], r[['V', 'J']]], axis=1)
 
 
-def set_counts(df):
+def set_counts(df, sampling_rate):
     n = len(df.index)
-    df['clone_count'] = np.random.multinomial(n=int(0.5 * n), pvals=[1./n]*n, size=1)
+    counts = np.random.multinomial(n=int(sampling_rate * n), pvals=[1./n]*n, size=1)
+    df['clone_count'] = pd.Series(counts[0, :])
     df = df.loc[df['clone_count'] > 0]
     return df
 
 
-def make_rep(model, size, dir, template, mutation_rate=0.05):
+def make_rep(model, size, dir, mr):
+    mutation_rate=0.05 if mr == None else mr
+    smpl_rate = 0.01
+    prop_after_sampling = 0.092 * (smpl_rate ** 2) + smpl_rate * 0.928 + 0.005
+
+    print(mutation_rate)
     if model.startswith('bcr'):
-        # Here BCR repertoire is made up of 1/5 tree roots and 4/5 other tree nodes
-        # Then the repertoire will be downsampled to just a half
-        # Therefore, we need to generate n = 2 * size * 1/5 initial sequences
-        n = int(round(size * 0.2 * 2))
+        n = find_root_number(size, mutation_rate) * (1 / prop_after_sampling)
     else:
-        # TCR repertoire is just halved after downsampling
-        n = size * 2
+        n = size * (1 / prop_after_sampling)
 
     # Generate initial repertoire
     try:
@@ -85,7 +95,8 @@ def make_rep(model, size, dir, template, mutation_rate=0.05):
         rep = mutate_repertoire(mutation_rate, rep)
 
     # Add random counts and downsample
-    rep = set_counts(rep)
+    rep.to_csv(args.dir + 'clones_before_sampling.csv', sep='\t')
+    rep = set_counts(rep, smpl_rate)
     rep = rep.reset_index(drop=True)
 
     return rep
@@ -158,7 +169,7 @@ args = parser.parse_args()
 
 rep = make_rep(args.model, args.size, args.dir, args.mutation_rate)
 print('Repertoire is generated')
-rep.to_csv(args.dir + 'clones_init.csv', sep='\t', index=False)
+rep.to_csv(args.dir + 'clones_init.csv', sep='\t')
 write_fasta(rep)
 
 run_sequencer(args.dir, args.sequencing_mode)
