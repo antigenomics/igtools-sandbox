@@ -2,8 +2,6 @@ import argparse
 import numpy as np
 import pandas as pd
 from subprocess import Popen, PIPE, call
-from copy import deepcopy
-from scipy.stats import gamma
 from hypermutator import *
 
 
@@ -42,7 +40,6 @@ def run_igor(size, model, dir):
 
 def find_root_number(size, mutation_rate):
     # empirical formula for tree_height = 15
-    print(mutation_rate)
     if mutation_rate < 0.08:
         return int(size / (15240 * mutation_rate - 151.8))
     else:
@@ -53,12 +50,34 @@ def read_igor_output(dir):
     s = pd.read_csv(dir + 'generated_seqs_noerr.csv', sep=';')
     r = pd.read_csv(dir + 'generated_realizations_noerr.csv', sep=';')
 
-    r['V'] = r[r.columns[1]].apply(lambda x: x.strip('()'))
-    r['J'] = r[r.columns[2]].apply(lambda x: x.strip('()'))
+    r['V'] = r[r.columns[1]].apply(lambda x: int(x.strip('()')))
+    r['J'] = r[r.columns[2]].apply(lambda x: int(x.strip('()')))
     s['sequence'] = s['nt_sequence']
     s['index'] = s['seq_index']
 
-    return pd.concat([s[['index', 'sequence']], r[['V', 'J']]], axis=1)
+    df = pd.concat([s[['index', 'sequence']], r[['V', 'J']]], axis=1)
+    df = add_region_coords(df)
+    return df
+
+
+def add_region_coords(df):
+    props = pd.read_csv('segment_prop.csv', sep='\t')
+
+    props_v = props[props['segment'] == 'Variable']
+    props_v = props_v.drop(['sequence', 'gene', 'segment'], axis=1)
+    props_v = props_v.rename(index=str, columns={"id": "v.name", "reference_point": "cdr3.start"})
+
+    props_j = props[props['segment'] == 'Joining']
+    props_j['cdr3.end.reverse'] = props_j['sequence'].str.len() - props_j['reference_point']
+    props_j = props_j.drop(['sequence', 'gene', 'segment', 'reference_point', 'cdr1.start', 'cdr1.end', 'cdr2.start', 'cdr2.end'], axis=1)
+    props_j = props_j.rename(index=str, columns={"id": "j.name"})
+
+    df = df.merge(props_v, left_on = 'V', right_on='igor_id')
+    df = df.drop(['igor_id'], axis=1)
+    df = df.merge(props_j, left_on='J', right_on='igor_id')
+    df = df.drop(['igor_id'], axis=1)
+    df['cdr3.end'] = df['sequence'].str.len() - df['cdr3.end.reverse']
+    return df
 
 
 def set_counts(df, sampling_rate):
@@ -74,7 +93,6 @@ def make_rep(model, size, dir, mr):
     smpl_rate = 0.01
     prop_after_sampling = 0.092 * (smpl_rate ** 2) + smpl_rate * 0.928 + 0.005
 
-    print(mutation_rate)
     if model.startswith('bcr'):
         n = find_root_number(size, mutation_rate) * (1 / prop_after_sampling)
     else:
