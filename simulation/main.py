@@ -110,7 +110,7 @@ def read_igor_output(dir):
 
     s['sequence'] = s['nt_sequence']
     s['index'] = s['seq_index']
-    
+
     df = pd.DataFrame()
     parms_dict = read_parms_file(dir)
     for i in parms_dict.keys():
@@ -124,6 +124,11 @@ def read_igor_output(dir):
     df['d.end'] = df['n1.end'] + df['Dlen'] - df['delD3'] - df['delD5']
     df['n2.end'] = df['d.end'] + df['insDJ']
 
+    # Filter out-of-frames
+    in_frame = [len(x)%3==0 for x in df['sequence']]
+    df = df[in_frame]
+    df = df.reset_index(drop=True)
+
     return df
 
 
@@ -135,27 +140,29 @@ def set_counts(df, sampling_rate):
     return df
 
 
-def make_rep(model, size, dir, mr, smpl_rate):
-    mutation_rate = 0.05 if mr is None else mr
+def make_rep(chain, model, size, dir, mr, smpl_rate):
+    mutation_rate = 0.005 if mr is None else mr
     smpl_rate = 1 if smpl_rate is None else smpl_rate
-    prop_after_sampling = 0.092 * (smpl_rate ** 2) + smpl_rate * 0.928 + 0.005
+    #prop_after_sampling = 0.092 * (smpl_rate ** 2) + smpl_rate * 0.928 + 0.005
 
-    # if model.startswith('bcr'):
+    # if chain.startswith('bcr'):
     #     n = find_root_number(size, mutation_rate) / prop_after_sampling
     # else:
-    n = size / prop_after_sampling
+    #n = size / prop_after_sampling
+    n = size
 
     # Generate initial repertoire
+    in_frame_ratio = 3
     try:
-        run_igor(size=n, model=model, dir=dir)
+        run_igor(size=n*in_frame_ratio, model=chain, dir=dir)
     except IgorError:
         raise
 
     rep = read_igor_output(dir)
 
     # Introduce SHMs and simulate cell proliferation
-    if args.model.startswith('bcr'):
-        rep = mutate_repertoire(mutation_rate, rep)
+    if chain.startswith('bcr'):
+        rep = mutate_repertoire(mutation_rate, model, rep)
 
     # Add random counts and downsample
     rep.to_csv(args.dir + 'clones_before_sampling.csv', sep='\t')
@@ -185,7 +192,7 @@ def write_fasta(df, path):
 
 def write_fastq(df, dir):
 # Creates two fastq files (MiXCR input)
-    
+
     with open(dir+'reads/1.fq', 'w') as f:
         for i in range(len(df.index)):
             f.write('@' + 'clone_' + str(df['index'][i]) + '\n' + df['sequence'][i] + '\n+\n' + 'C'*len(df['sequence'][i]) + '\n')
@@ -196,35 +203,33 @@ def write_fastq(df, dir):
 
 
 def run_sequencer(dir, sequencing_mode):
-    if sequencing_mode != 'None':
+    if sequencing_mode == 'RNASeq':
+        l = 75
+        ss = 'NS50'
+    elif sequencing_mode == 'MiSeq':
+        l = 250
+        ss = 'MSv1'
+    elif sequencing_mode == 'HiSeq':
+        l = 150
+        ss = 'HSXn'
 
-        if sequencing_mode == 'RNASeq':
-            l = 75
-            ss = 'NS50'
-        elif sequencing_mode == 'MiSeq':
-            l = 250
-            ss = 'MSv1'
-        elif sequencing_mode == 'HiSeq':
-            l = 150
-            ss = 'HSXn'
-
-        call(['art_illumina',
-              '-p',
-              '-i', dir+'clones.fasta',
-              '-l', str(l),
-              '-ss', ss,
-              '-f','10',
-              '-m','1000',
-              '-s','0',
-              '-qL', '32',
-              '-o', dir+'reads/'])
+    call(['art_illumina',
+          '-p',
+          '-i', dir+'clones.fasta',
+          '-l', str(l),
+          '-ss', ss,
+          '-f','10',
+          '-m','1000',
+          '-s','0',
+          '-qL', '32',
+          '-o', dir+'reads/'])
 
 
 def make_reads_files(df, dir, sequencing_mode):
     if os.path.isdir(dir + "reads") == False:
         call(['mkdir', dir + 'reads'])
 
-    if sequencing_mode != 'None':
+    if sequencing_mode in ['RNASeq', 'MiSeq', 'HiSeq']:
         write_fasta(df, dir+'clones.fasta')
         run_sequencer(args.dir, args.sequencing_mode)
     else:
@@ -232,28 +237,29 @@ def make_reads_files(df, dir, sequencing_mode):
 
 
 def run_mixcr(dir):
-    if os.path.isdir(dir + "mixcr") == False:
+    if not os.path.isdir(dir + "mixcr"):
         call(["mkdir", dir+"mixcr"])
 
     receptor = 'igh' if args.model.startswith('bcr') else 'tcr'
-    
-    call(["mixcr", "analyze", "amplicon", 
-        "-s", "hsa", 
+
+    call(["mixcr", "analyze", "amplicon",
+        "-s", "hsa",
         "--starting-material", "dna",
-        "--5-end", "no-v-primers", 
+        "--5-end", "no-v-primers",
         "--3-end", "c-primers",
         "--adapters", "no-adapters",
         "--receptor-type", receptor,
         "--contig-assembly",
         "--align", '"--library default"',
-        "--assemble", '"-OmaxBadPointsPercent=0"', 
+        "--assemble", '"-OmaxBadPointsPercent=0"',
         "--assemble", '"-OcloneClusteringParameters=null"',
         "--assemble", '"-OassemblingFeatures="[FR1+CDR1+FR2+CDR2+FR3+CDR3+FR4]""',
         dir+"reads/1.fq", dir+"reads/2.fq", dir+"mixcr/analysis"])
 
 
 parser = argparse.ArgumentParser(description="Simulate B or T cell receptor repertoire")
-parser.add_argument("-m", dest="model", type=str, help='Name of the model (bcr_heavy/tcr_alpha)', default='bcr_heavy')
+parser.add_argument("-c", dest="chain", type=str, help='Immunoglobulin chain (bcr_heavy/tcr_alpha/tcr_beta)', default='bcr_heavy')
+parser.add_argument("-m", dest="model", type=str, help='Substitution model (steele/s5f)', default='steele')
 parser.add_argument("-n", dest="size", type=int, help='Approximate size of the repertoire (minimal)')
 parser.add_argument("-d", dest="dir", type=str, help='Output directory')
 parser.add_argument("-mr", dest="mutation_rate", type=float, help='Bulk mutation rate')
@@ -262,14 +268,14 @@ parser.add_argument("-s", dest="sequencing_mode", type=str, help='Type of sequen
 args = parser.parse_args()
 
 
-rep = make_rep(args.model, args.size, args.dir, args.mutation_rate, args.smpl_rate)
+rep = make_rep(args.chain, args.model, args.size, args.dir, args.mutation_rate, args.smpl_rate)
 print('Repertoire is generated')
-rep.to_csv(args.dir + 'clones_init.csv', sep='\t')
+#rep.to_csv(args.dir + 'clones_init.csv', sep='\t')
 
 
-make_reads_files(rep, args.dir, args.sequencing_mode)
+#make_reads_files(rep, args.dir, args.sequencing_mode)
 print('Reads are generated')
 
 
-run_mixcr(args.dir)
+#run_mixcr(args.dir)
 print('MiXCR processing is done')
