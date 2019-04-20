@@ -5,13 +5,18 @@ from copy import deepcopy
 from itertools import product
 
 
-def fivemer_dict():
-    nt = [[0,1,2,3]]*5
-    fivemer_list = list(product(*nt))
-    return {x:i for i,x in enumerate(fivemer_list)}
+# Numbered dict of all fivemers
+nt = [[0,1,2,3]]*5
+fivemer_list = list(product(*nt))
+__fivemer_dict__ = {x:i for i,x in enumerate(fivemer_list)}
 
+# Amino acid hydrophobicity values
+aa = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y','*']
+__aa_code__ = {y:x for x, y in enumerate(aa)}
 
-__fivemer_dict__ = fivemer_dict()
+aa_prop = pd.read_csv('/home/anna/bcr/aa_prop.csv', sep='\t')
+__aa_hydroph_dict__ = {__aa_code__[x]:y for x,y in zip(aa_prop['amino_acid'], aa_prop['kf4'])}
+__aa_hydroph_dict__[__aa_code__['*']] = 0
 
 
 class Sequence:
@@ -60,9 +65,8 @@ class Sequence:
             codons.pop(-1)
 
         if array_out:
-            aa = sorted(set(code.values()))
-            aa_code = {y:x for x, y in enumerate(aa)}
-            code2 = {x:aa_code[code[x]] for x in code.keys()}
+            global __aa_code__
+            code2 = {x:__aa_code__[code[x]] for x in code.keys()}
             seq_aa = np.array([code2[tuple(x)] for x in codons])
         else:
             seq_aa = ''.join([code[tuple(x)] for x in codons])
@@ -79,8 +83,8 @@ class Sequence:
 
     def split_by_region(self, region_ends):
         # Cut matrix by region coordinates and concatenate CDRs and FWRs separately
-        nt_regions = np.split(self.nt_array, region_ends+1)
-        kmer_regions = np.split(self.kmer_array, region_ends+1)
+        nt_regions = np.split(self.nt_array, region_ends)
+        kmer_regions = np.split(self.kmer_array, region_ends)
         return (Sequence(nt_array=np.hstack(np.array(nt_regions)[[0,2,4,6]]),
                          kmer_array=np.hstack(np.array(kmer_regions)[[0,2,4,6]])),
                 Sequence(nt_array=np.hstack(np.array(nt_regions)[[1,3,5]]),
@@ -130,7 +134,6 @@ class Clonotype:
     index = unique identifier
     parent = index of parent Clonotype
     root = index of tree root Clonotype
-    proliferation = proliferation probability
     sub_list = list of nucleotide coordinates of all substitutions
     indel_list = list of nucleotide coordinates of all insertions and deletions
     indel_lens = list of lengths of insertions and deletions (corresponds to coordinates in indel_list)
@@ -145,11 +148,26 @@ class Clonotype:
     fwr_s = number of silent substitutions in FWR
     cdr_s = number of silent substitutions in CDR
 
+    alive = whether a Clonotype continue generating progeny
+    fitness = CDR hydrophobicity
+    progeny = number of progeny in one iteration (0 - Clonotype is dead and excluded from active repertoire,
+                                                  1 - alive with no progeny,
+                                                  n>1 - alive with n childs)
+
     """
 
+    def calc_fitness(self):
+        global __aa_hydroph_dict__
+        self.fitness = -sum([__aa_hydroph_dict__[aa] for aa in self.seq_aa_cdr])
+
+    def check_alive(self):
+        # Clonotypes with stop codons are dead
+        self.alive = not (20 in self.seq_aa_fwr or 20 in self.seq_aa_cdr)
+
     def __init__(self, seq=None, seq_aa_fwr=None, seq_aa_cdr=None, index=None, parent=None, root=None, generation=None, 
-                 proliferation=None, sub_list=None, indel_list=None, indel_lens=None, sub_total=None, sub_new=None, 
-                 indel_total=None, indel_new=None, region_ends=None, segment_ends=None, fwr_r=None, cdr_r=None, fwr_s=None, cdr_s=None):
+                 sub_list=None, indel_list=None, indel_lens=None, sub_total=None, sub_new=None,
+                 indel_total=None, indel_new=None, region_ends=None, segment_ends=None, fwr_r=None, cdr_r=None, fwr_s=None, cdr_s=None,
+                 alive = True, fitness=None, progeny=None):
         self.seq = seq
         self.seq_aa_fwr = seq_aa_fwr
         self.seq_aa_cdr = seq_aa_cdr
@@ -157,7 +175,6 @@ class Clonotype:
         self.parent = parent
         self.root = root
         self.generation = generation
-        self.proliferation = proliferation
         self.sub_total = sub_total
         self.sub_new = sub_new
         self.indel_total = indel_total
@@ -171,6 +188,15 @@ class Clonotype:
         self.cdr_r = cdr_r
         self.fwr_s = fwr_s
         self.cdr_s = cdr_s
+        self.alive = alive
+        self.fitness = fitness
+        self.progeny = progeny
+
+        if fitness is None:
+            self.calc_fitness()
+
+        if alive is None:
+            self.check_alive()
 
     def update_regions(self, indel_list):
         # Shift region coordinates if any indel occured
@@ -275,17 +301,20 @@ class Clonotype:
                 sub_idxs, sub_unique = np.array([]), np.array([])
 
             cl_new = Clonotype(index=0, parent=self.index, root=self.root,
-                               generation = self.generation + 1,
-                               proliferation = self.proliferation,
-                               sub_total = sub_unique.shape[0],
-                               sub_new = sub_idxs.shape[0],
-                               sub_list = sub_unique,
-                               region_ends = deepcopy(self.region_ends),
-                               segment_ends = deepcopy(self.segment_ends),
-                               fwr_r = self.fwr_r + substitution['fwr_result']['n_aa_subs'],
-                               cdr_r = self.cdr_r + substitution['cdr_result']['n_aa_subs'],
-                               fwr_s = self.fwr_s + substitution['fwr_result']['n_nt_subs'] - substitution['fwr_result']['n_aa_subs'],
-                               cdr_s = self.cdr_s + substitution['cdr_result']['n_nt_subs'] - substitution['cdr_result']['n_aa_subs'])
+                               generation=self.generation + 1,
+                               sub_total=sub_unique.shape[0],
+                               sub_new=sub_idxs.shape[0],
+                               sub_list=sub_unique,
+                               region_ends=deepcopy(self.region_ends),
+                               segment_ends=deepcopy(self.segment_ends),
+                               fwr_r=self.fwr_r + substitution['fwr_result']['n_aa_subs'],
+                               cdr_r=self.cdr_r + substitution['cdr_result']['n_aa_subs'],
+                               fwr_s=self.fwr_s + substitution['fwr_result']['n_nt_subs'] - substitution['fwr_result'][
+                                   'n_aa_subs'],
+                               cdr_s=self.cdr_s + substitution['cdr_result']['n_nt_subs'] - substitution['cdr_result'][
+                                   'n_aa_subs'],
+                               fitness=self.fitness,
+                               alive=True)
 
             if indel_list[0].shape[0] > 0:
                 new_seq = self.introduce_indels(substitution['full_seq'], indel_list)
@@ -296,6 +325,8 @@ class Clonotype:
                 cl_new.update_regions(indel_list)
                 cl_new.update_segments(indel_list)
                 cl_new.seq_aa_fwr, cl_new.seq_aa_cdr = (reg.translate() for reg in cl_new.seq.split_by_region(cl_new.region_ends))
+                cl_new.check_alive()
+                cl_new.calc_fitness()
             else:
                 cl_new.seq = Sequence(nt_array=substitution['full_seq'], add_kmers=True)
                 cl_new.indel_total = self.indel_total
@@ -303,6 +334,9 @@ class Clonotype:
                 cl_new.indel_list, cl_new.indel_lens = (np.array([]),np.array([]))
                 cl_new.seq_aa_fwr = substitution['fwr_result']['aa_array']
                 cl_new.seq_aa_cdr = substitution['cdr_result']['aa_array']
+
+                if 0 < cl_new.cdr_r:
+                    cl_new.calc_fitness()
 
             # check that each region length > 12 nt
             region_len = np.hstack(([cl_new.region_ends[0]+1], \
@@ -313,18 +347,7 @@ class Clonotype:
 
 
 def proliferate(Clonotype, model):
-    if np.random.random() < Clonotype.proliferation:
-        return Clonotype.make_mutant(model)
-
-
-def correct_mut_rate(mut_rate, max_tree_height):
-    # OBSOLETE FUNCTION
-    # These coefficients were calculated empirically
-    if max_tree_height == 15:
-        coeff = 0.1572 - 0.0004
-    elif max_tree_height == 5:
-        coeff = 0.543
-    return mut_rate * coeff
+    [Clonotype.make_mutant(model) for i in range(Clonotype.progeny)]
 
 
 def fwr_cdr_mut_rates(mut_rate, ratio=3.2):
@@ -384,8 +407,8 @@ def df_to_clonotypes(df):
     rep = []
 
     for i in range(len(df.index)):
-        region_ends = np.array([df['cdr1.start'][i] - 1, df['cdr1.end'][i], df['cdr2.start'][i] - 1,
-                       df['cdr2.end'][i], df['cdr3.start'][i] - 1, df['cdr3.end'][i]])
+        region_ends = np.array([df['cdr1.start'][i], df['cdr1.end'][i], df['cdr2.start'][i],
+                       df['cdr2.end'][i], df['cdr3.start'][i], df['cdr3.end'][i]])
         segment_ends = [df['v.end'][i], df['n1.end'][i], df['d.end'][i], df['n2.end'][i]]
         seq = Sequence(seq_to_array(df['sequence'][i]), add_kmers=True)
         seq_aa_fwr, seq_aa_cdr = (reg.translate() for reg in seq.split_by_region(region_ends))
@@ -397,7 +420,6 @@ def df_to_clonotypes(df):
                       parent=df['index'][i],
                       root=df['index'][i],
                       generation=0,
-                      proliferation=df['proliferation'][i],
                       sub_total=0,
                       sub_new=0,
                       indel_total=0,
@@ -410,7 +432,9 @@ def df_to_clonotypes(df):
                       fwr_r=0,
                       cdr_r=0,
                       fwr_s=0,
-                      cdr_s=0)
+                      cdr_s=0,
+                      alive=True,
+                      progeny=None)
         rep.append(g)
 
     return rep
@@ -433,7 +457,9 @@ def clonotypes_to_df(rep):
                                      cl.fwr_r,
                                      cl.cdr_r,
                                      cl.fwr_s,
-                                     cl.cdr_s] +
+                                     cl.cdr_s,
+                                     cl.alive,
+                                     cl.fitness] +
                                     list(cl.region_ends) +
                                     cl.segment_ends],
                                    columns=['index', 'parent', 'root', 'generation', 'sequence',
@@ -441,48 +467,60 @@ def clonotypes_to_df(rep):
                                             'sub_total', 'sub_new', 'indel_total', 'indel_new',
                                             'fwr_r', 'cdr_r', 'fwr_s', 'cdr_s',
                                             'fwr1_end', 'cdr1_end', 'fwr2_end', 'cdr2_end',
-                                            'fwr3_end', 'cdr3_end', 'v_end','n_end','d_end','n2_end']) for cl in rep],
+                                            'fwr3_end', 'cdr3_end', 'v_end','n_end','d_end','n2_end','alive','fitness']) for cl in rep],
                      ignore_index=True)
 
 
-def mutate_repertoire(final_mutation_rate, model_name, rep_df):
-    # Perform several (max_tree_height) iterations of Clonotype mutation
+def calc_progeny(rep):
+    rep.sort(key=lambda x: x.fitness)
+    p = np.random.exponential(size=len(rep), scale=2.0).astype(int)
+    p.sort()
 
-    #p = np.random.triangular(left=0, mode=0, right=1, size=rep_df.shape[0])
-    p = np.random.exponential(size=rep_df.shape[0])
-    #p = np.array(range(len(rep_df.index)))
-    #p = np.exp(np.exp(-p**5))*(p**5)
-    p = p/max(p)
-    rep_df['proliferation'] = p
+    for i,cl in enumerate(rep):
+        cl.progeny = p[i]
+
+def mutate_repertoire(mutation_rate, model_name, rep_df, fitness_fun):
+    # Perform several (max_tree_height) iterations of Clonotype mutation
     rep_cl = df_to_clonotypes(rep_df)
+    rep_dead = []
+    max_index = len(rep_cl)
 
     max_tree_height = 10
-    #mutation_rate = correct_mut_rate(final_mutation_rate, max_tree_height)
-    mutation_rate = final_mutation_rate
     mut_model = make_model(model_name, mutation_rate)
 
     # Iteratively mutate rep_cl creating novel tree nodes
     for s in range(max_tree_height):
         print(s)
         pool = mp.Pool()
-        new_rep = [pool.apply(proliferate, args=(cl, mut_model)) for cl in rep_cl]
-        new_rep = [cl for cl in new_rep if cl is not None]
-        new_rep = [cl for cl in new_rep if cl.fwr_r < 8]
-        new_rep = [cl for cl in new_rep if ((cl.cdr_r < 2) or (cl.cdr_s == 0) or (cl.cdr_r/cl.cdr_s > 2))]
 
-        for i, cl in enumerate(new_rep):
-            cl.index = len(rep_cl) + 1 + i
-        rep_cl = rep_cl + new_rep
+        rep_dead = rep_dead + [cl for cl in rep_cl if not cl.alive]  # dead due to non-functional chain
+        rep_alive = [cl for cl in rep_cl if cl.alive]
+        calc_progeny(rep_alive)
+        rep_dead = rep_dead + [cl for cl in rep_alive if cl.progeny == 0]  # dead due to low fitness
+        rep_alive = [cl for cl in rep_alive if cl.progeny > 0]
+
+        rep_new = [pool.apply(proliferate, args=(cl, mut_model)) for cl in rep_alive if cl.progeny > 1]
+        rep_new = [cl for cl in rep_new if cl is not None]
+
+        # basic selection for RS in FWR and CDR
+        #rep_new = [cl for cl in rep_new if cl.fwr_r < 8]
+        #rep_new = [cl for cl in rep_new if ((cl.cdr_r < 2) or (cl.cdr_s == 0) or (cl.cdr_r/cl.cdr_s > 2))]
+
+        for i, cl in enumerate(rep_new):
+            cl.index = max_index + 1 + i
+        max_index += len(rep_new)
+
+        rep_cl = rep_alive + rep_new
 
     # for s in range(max_tree_height):
     #     print(s)
-    #     new_rep = []
-    #     for c in rep_cl:
-    #         new_rep.append(c.make_mutant(mut_model))
-    #     new_rep = [cl for cl in new_rep if cl is not None]
-    #     for i, cl in enumerate(new_rep):
+    #     rep_new = []
+    #    for c in rep_cl:
+    #         rep_new.append(proliferate(c,mut_model))
+    #     rep_new = [cl for cl in rep_new if cl is not None]
+    #     for i, cl in enumerate(rep_new):
     #         cl.index = len(rep_cl) + 1 + i
-    #     rep_cl = rep_cl + new_rep
+    #     rep_cl = rep_cl + rep_new
 
     rep_df_mutated = clonotypes_to_df(rep_cl)
     rep_df = rep_df.rename(index=str, columns={"index": "root", "V":"v.igor", "J":"j.igor"})

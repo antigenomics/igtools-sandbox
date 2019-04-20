@@ -77,7 +77,7 @@ def add_region_coords(df):
     props_v = props_v.rename(index=str, columns={"id": "v.name", "reference_point": "cdr3.start"})
 
     props_j = props[props['segment'] == 'Joining']
-    props_j['cdr3.end.reverse'] = props_j['sequence'].str.len() - props_j['reference_point']
+    props_j['cdr3.end.reverse'] = props_j['sequence'].str.len() - props_j['reference_point'] + 1
     props_j = props_j.drop(['sequence', 'gene', 'segment', 'reference_point', 'cdr1.start', 'cdr1.end', 'cdr2.start', 'cdr2.end'], axis=1)
     props_j = props_j.rename(index=str, columns={"id": "j.name"})
 
@@ -125,7 +125,7 @@ def read_igor_output(dir):
     df['n2.end'] = df['d.end'] + df['insDJ']
 
     # Filter out-of-frames
-    in_frame = [len(x)%3==0 for x in df['sequence']]
+    in_frame = [len(x) % 3 == 0 for x in df['sequence']]
     df = df[in_frame]
     df = df.reset_index(drop=True)
 
@@ -240,7 +240,7 @@ def run_mixcr(dir):
     if not os.path.isdir(dir + "mixcr"):
         call(["mkdir", dir+"mixcr"])
 
-    receptor = 'igh' if args.model.startswith('bcr') else 'tcr'
+    receptor = 'igh' if args.chain.startswith('bcr') else 'tcr'
 
     call(["mixcr", "analyze", "amplicon",
         "-s", "hsa",
@@ -270,7 +270,7 @@ args = parser.parse_args()
 
 rep = make_rep(args.chain, args.model, args.size, args.dir, args.mutation_rate, args.smpl_rate)
 print('Repertoire is generated')
-#rep.to_csv(args.dir + 'clones_init.csv', sep='\t')
+#rep.+csv(args.dir + 'clones_init.csv', sep='\t')
 
 
 #make_reads_files(rep, args.dir, args.sequencing_mode)
